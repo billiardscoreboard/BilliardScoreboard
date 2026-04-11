@@ -194,12 +194,14 @@
     let matchId = "LOCAL";
     try {
         const firebaseConfig = {
-          apiKey: "AIzaSyCKJs9TTf7wUipvOMWG-tgfzVlpIj0kmGk",
-          authDomain: "billiard-scoreboard-3cbb5.firebaseapp.com",
-          databaseURL: "https://billiard-scoreboard-3cbb5-default-rtdb.europe-west1.firebasedatabase.app",
-          projectId: "billiard-scoreboard-3cbb5",
-          appId: "1:50403982389:web:57c2b0dbe03b4b47dec57c"
-        };
+  apiKey: "AIzaSyCKJs9TTf7wUipvOMWG-tgfzVlpIj0kmGk",
+  authDomain: "billiard-scoreboard-3cbb5.firebaseapp.com",
+  databaseURL: "https://billiard-scoreboard-3cbb5-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "billiard-scoreboard-3cbb5",
+  storageBucket: "billiard-scoreboard-3cbb5.firebasestorage.app",
+  messagingSenderId: "50403982389",
+  appId: "1:50403982389:web:57c2b0dbe03b4b47dec57c"
+};
         firebase.initializeApp(firebaseConfig);
         db = firebase.database();
         matchId = localStorage.getItem('billiardMatchId');
