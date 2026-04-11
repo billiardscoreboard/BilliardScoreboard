@@ -2,19 +2,30 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Billiard OBS Overlay</title>
+  <title>Billiard OBS Overlay PRO</title>
+  
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+  
   <style>
-    /* Sfondo trasparente fondamentale per OBS */
+    /* Sfondo completamente trasparente per OBS */
     body { 
       margin: 0; padding: 0; 
       background: transparent !important; 
-      color: white; font-family: 'Roboto', sans-serif;
+      color: white; font-family: 'Roboto', -apple-system, sans-serif;
       display: flex; justify-content: center; align-items: flex-start;
       height: 100vh; overflow: hidden;
     }
     
+    /* Indicatore di connessione nascosto nell'angolo */
+    #obs-status {
+      position: absolute; top: 10px; left: 10px;
+      width: 10px; height: 10px; border-radius: 50%;
+      background: red; border: 1px solid white;
+      opacity: 0.5;
+    }
+    
+    /* Contenitore principale (Largo 1200px come da standard streaming) */
     .scoreboard {
       display: flex; align-items: center; justify-content: space-between;
       background: rgba(0, 0, 0, 0.85); /* Sfondo semi-trasparente elegante */
@@ -22,32 +33,44 @@
       border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
       padding: 10px 40px; width: 1200px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      backdrop-filter: blur(5px); /* Effetto vetro se supportato */
     }
 
     .player { display: flex; align-items: center; gap: 20px; width: 45%; }
     .player-2 { flex-direction: row-reverse; }
 
-    .name { font-size: 36px; font-weight: bold; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
+    .name { 
+      font-size: 36px; font-weight: bold; text-transform: uppercase; 
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+      max-width: 320px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    }
     .player-2 .name { color: #facc15; }
 
     .set { 
-      background: white; color: black; font-size: 32px; font-weight: bold; 
+      background: white; color: black; font-size: 32px; font-weight: 900; 
       width: 50px; height: 50px; border-radius: 50%; 
       display: flex; justify-content: center; align-items: center;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
     }
     .player-2 .set { background: #facc15; }
 
-    .score { font-size: 80px; font-weight: 900; min-width: 120px; text-align: center; }
+    .score { 
+      font-size: 80px; font-weight: 900; min-width: 120px; text-align: center; 
+      text-shadow: 3px 3px 10px rgba(0,0,0,0.9);
+      font-variant-numeric: tabular-nums;
+    }
     .player-2 .score { color: #facc15; }
 
-    .vs { font-size: 30px; font-weight: bold; color: #888; margin: 0 20px; }
+    .vs { font-size: 30px; font-weight: bold; color: #666; margin: 0 20px; }
   </style>
 </head>
 <body>
 
+  <div id="obs-status"></div>
+
   <div class="scoreboard">
     <div class="player player-1">
-      <div class="name" id="obs-n0">GIOCATORE 1</div>
+      <div class="name" id="obs-n0">IN ATTESA...</div>
       <div class="set" id="obs-st0">0</div>
       <div class="score" id="obs-s0">0</div>
     </div>
@@ -55,13 +78,14 @@
     <div class="vs">VS</div>
     
     <div class="player player-2">
-      <div class="name" id="obs-n1">GIOCATORE 2</div>
+      <div class="name" id="obs-n1">DI DATI</div>
       <div class="set" id="obs-st1">0</div>
       <div class="score" id="obs-s1">0</div>
     </div>
   </div>
 
   <script>
+    // 1. Configurazione Firebase (Identica al file principale)
     const firebaseConfig = {
       apiKey: "AIzaSyCKJs9TTf7wUipvOMWG-tgfzVlpIj0kmGk",
       authDomain: "billiard-scoreboard-3cbb5.firebaseapp.com",
@@ -69,28 +93,61 @@
       projectId: "billiard-scoreboard-3cbb5",
       appId: "1:50403982389:web:57c2b0dbe03b4b47dec57c"
     };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    
+    try {
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-    // Recupera l'ID della partita dall'URL (es: obs.html?id=BS-1234)
-    const urlParams = new URLSearchParams(window.location.search);
-    const matchId = urlParams.get('id');
+        // 2. Estrazione ID Partita dall'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const matchId = urlParams.get('id');
 
-    if (matchId) {
-        db.ref('matches/' + matchId).on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                document.getElementById('obs-n0').innerText = data.n0 || "GIOCATORE 1";
-                document.getElementById('obs-n1').innerText = data.n1 || "GIOCATORE 2";
-                document.getElementById('obs-s0').innerText = data.s0 || "0";
-                document.getElementById('obs-s1').innerText = data.s1 || "0";
-                document.getElementById('obs-st0').innerText = data.st0 || "0";
-                document.getElementById('obs-st1').innerText = data.st1 || "0";
+        // 3. Monitoraggio Connessione (Pallino Verde/Rosso)
+        db.ref('.info/connected').on('value', (snap) => {
+            const statusLed = document.getElementById('obs-status');
+            if (snap.val() === true) {
+                statusLed.style.background = '#2ecc71'; // Verde
+                console.log("OBS: Connesso a Firebase");
+            } else {
+                statusLed.style.background = '#e74c3c'; // Rosso
+                console.log("OBS: Disconnesso da Firebase");
             }
         });
-    } else {
-        document.getElementById('obs-n0').innerText = "IN ATTESA...";
-        document.getElementById('obs-n1').innerText = "DI CONNESSIONE";
+
+        // 4. Ricezione Dati in Tempo Reale
+        if (matchId) {
+            console.log("In ascolto della partita:", matchId);
+            
+            // Usiamo .on('value') per restare sempre in ascolto dei cambiamenti
+            db.ref('matches/' + matchId).on('value', (snapshot) => {
+                const data = snapshot.val();
+                
+                if (data) {
+                    // Aggiorna la grafica solo se i dati esistono
+                    document.getElementById('obs-n0').innerText = data.n0 || "GIOCATORE 1";
+                    document.getElementById('obs-n1').innerText = data.n1 || "GIOCATORE 2";
+                    document.getElementById('obs-s0').innerText = data.s0 !== undefined ? data.s0 : "0";
+                    document.getElementById('obs-s1').innerText = data.s1 !== undefined ? data.s1 : "0";
+                    document.getElementById('obs-st0').innerText = data.st0 !== undefined ? data.st0 : "0";
+                    document.getElementById('obs-st1').innerText = data.st1 !== undefined ? data.st1 : "0";
+                } else {
+                    console.log("Dati partita vuoti o non ancora creati.");
+                }
+            }, (error) => {
+                console.error("Errore lettura Firebase:", error);
+            });
+            
+        } else {
+            // Se l'URL non ha ?id=...
+            document.getElementById('obs-n0').innerText = "ERRORE URL";
+            document.getElementById('obs-n1').innerText = "MANCA L'ID";
+            document.getElementById('obs-status').style.background = "orange";
+        }
+        
+    } catch(err) {
+        console.error("Inizializzazione Firebase fallita:", err);
+        document.getElementById('obs-n0').innerText = "ERRORE";
+        document.getElementById('obs-n1').innerText = "FIREBASE";
     }
   </script>
 </body>
