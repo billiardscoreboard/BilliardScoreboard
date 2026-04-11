@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Billiard Scoreboard - Pro Reset + Stream</title>
+  
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: none; }
+    :root { --bg-main: #071f14; --bg-key: #0b2b1c; --bg-key-active: #237a52; --color-p1: #ffffff; --color-p2: #facc15; --color-clear: #c0392b; --btn-blue: #0056b3; --btn-red: #c0392b; --btn-green: #27ae60; --btn-purple: #8e44ad; }
+    body { width: 100vw; height: 100vh; overflow: hidden; font-family: 'Roboto', sans-serif; background: var(--bg-main); color: var(--color-p1); }
+    .board { display: flex; width: 100%; height: 100%; }
+    .player-section { flex: 1; display: flex; flex-direction: column; padding: 0 1vw; border-right: 1px solid rgba(255,255,255,0.1); position: relative; }
+    .player-section:last-child { border-right: none; }
+    .key, .center-btn, .set-ctrl-btn, .btn-reset-sets, .ok-btn, .choice-btn, .final-btn { transition: transform 0.05s, background-color 0.05s; }
+    .key:active, .center-btn:active, .set-ctrl-btn:active, .btn-reset-sets:active, .ok-btn:active, .choice-btn:active, .final-btn:active { transform: scale(0.92); filter: brightness(1.3); }
+    .ok-btn { position: fixed; top: 25vh; left: 50%; transform: translateX(-50%); background: #f1c40f; color: #000; border: 3px solid #000; border-radius: 12px; font-weight: 900; font-size: 3vh; padding: 1.5vh 6vw; z-index: 2000; display: none; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+    .last-container { position: absolute; top: 45.5%; transform: translateY(-50%); display: flex; gap: 0.8vw; z-index: 10; }
+    .player-1 .last-container { left: 1vw; } .player-2 .last-container { right: 1vw; }  
+    .history-val { font-size: 3.6vh; font-weight: bold; }
+    .header { display: flex; justify-content: center; align-items: center; height: 10vh; margin-top: 2vh; z-index: 5; gap: 1.5vw; }
+    .name-input { background: transparent; border: 3px solid rgba(255,255,255,0.5); border-radius: 6px; color: var(--color-p1); font-size: 6.48vh; font-weight: bold; text-align: center; padding: 1px 8px; outline: none; width: 35vw; user-select: text !important; -webkit-user-select: text !important; touch-action: auto !important; white-space: nowrap; overflow: hidden; }
+    .player-2 .name-input { border-color: rgba(250, 204, 21, 0.5); color: var(--color-p2); }
+    .set-dot { width: 8.4vh; height: 8.4vh; border-radius: 50%; color: #000; font-size: 6.48vh; font-weight: bold; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+    .score { font-size: 36.8vh; font-weight: 900; line-height: 0.75; letter-spacing: -12px; transition: transform 0.1s; text-align: center; margin-top: 7vh; will-change: transform; }
+    .player-2 .score { color: var(--color-p2); }
+    .score-blink { animation: blink 0.5s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .keypad { position: absolute; bottom: 3vh; display: grid; grid-template-columns: repeat(4, auto); gap: 0.77vh; z-index: 20; }
+    .player-1 .keypad { left: 1.5vw; } .player-2 .keypad { right: 1.5vw; }
+    .key { background: var(--bg-key); border: 2px solid rgba(255,255,255,0.2); border-radius: 16px; color: var(--color-p1); font-weight: bold; display: flex; align-items: center; justify-content: center; height: 15.62vh; width: 15.62vh; font-size: 8.58vh; cursor: pointer; }
+    
+    .center-btn { position: absolute; left: 50%; transform: translateX(-50%); color: #fff; border: 3px solid #000; border-radius: 14px; width: 18.74vh; height: 9.37vh; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 2.75vh; cursor: pointer; z-index: 20; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-transform: uppercase; text-align: center; line-height: 0.95; padding: 4px; }
+    .btn-blue-bg { background: var(--btn-blue); } .btn-red-bg { background: var(--btn-red); } .btn-purple-bg { background: var(--btn-purple); }
+    
+    .center-stream-btn { bottom: 47vh; }
+    .center-set-btn { bottom: 36vh; } 
+    .center-history-btn { bottom: 25vh; } 
+    .center-invert-btn { bottom: 14vh; } 
+    .center-exit-btn { bottom: 3vh; }
+
+    .overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2vh; background: rgba(7,31,20,0.98); }
+    .exit-card { width: 85%; padding: 5vh; background: var(--bg-key); border: 4px solid white; border-radius: 30px; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+    .exit-msg { font-size: 4.2vh; font-weight: 900; margin-bottom: 6vh; line-height: 1.2; color: white; text-transform: uppercase; }
+    .exit-buttons { display: flex; justify-content: center; gap: 4vw; }
+    .choice-btn { width: 25vh; height: 12vh; border-radius: 20px; font-size: 4vh; font-weight: 900; border: 3px solid #000; color: white; cursor: pointer; text-transform: uppercase; }
+    .btn-si { background: var(--btn-red); } .btn-no { background: var(--btn-blue); }
+    .final-btn { width: auto; min-width: 50vw; height: 12vh; padding: 0 4vw; border-radius: 20px; font-size: 3.5vh; font-weight: 900; border: 3px solid #000; color: white; cursor: pointer; text-transform: uppercase; margin: 2vh; }
+    .btn-return { background: var(--btn-green); }
+    .set-ctrl-btn { width: 12vh; height: 12vh; border-radius: 50%; background: var(--bg-key); border: 3px solid white; color: white; font-size: 8vh; font-weight: bold; display: flex; justify-content: center; align-items: center; }
+    .btn-reset-sets { background: var(--color-clear); color: white; border: 2px solid white; border-radius: 12px; font-size: 2.5vh; font-weight: 900; padding: 1.5vh 3vw; margin: 4vh 0; text-transform: uppercase; cursor: pointer; }
+    .btn-back { background: var(--color-clear); color: white; border-radius: 12px; font-size: 3vh; padding: 2vh 5vw; cursor: pointer; border:none; font-weight: bold; text-transform: uppercase; margin-top: 3vh; }
+    .history-card { background: var(--bg-key); padding: 3vh; border-radius: 24px; border: 2px solid white; width: 95%; height: 90vh; display: flex; flex-direction: column; }
+    .history-columns { display: flex; gap: 2vw; flex-grow: 1; overflow: hidden; margin-top: 2vh; }
+    .history-col { flex: 1; display: flex; flex-direction: column; background: #000; border-radius: 12px; border: 1px solid #333; overflow: hidden; }
+    .col-header { padding: 1.5vh; font-weight: bold; font-size: 3.25vh; text-transform: uppercase; border-bottom: 2px solid #222; }
+    .log-scroll { flex-grow: 1; overflow-y: auto; padding: 1vh; font-family: monospace; }
+    .log-entry { display: flex; justify-content: space-between; padding: 1.2vh 1vh; border-bottom: 1px solid #222; font-size: 2.42vh; }
+    .tiro-val.plus { color: #27ae60; } .tiro-val.minus { color: #e74c3c; }
+    
+    .stream-url-box { background: #000; border: 2px solid var(--btn-purple); padding: 2vh; border-radius: 10px; font-family: monospace; font-size: 2.2vh; color: #0f0; margin-bottom: 3vh; word-break: break-all; }
+  </style>
+</head>
+<body>
+
+  <button id="global-ok-btn" class="ok-btn" ontouchstart="closeKeyboard(event)">OK</button>
+
+  <div id="main-app-view" class="board">
+    <button class="center-btn center-stream-btn btn-purple-bg" ontouchstart="openStreamPage(event)">Streaming</button>
+    <button class="center-btn center-set-btn btn-blue-bg" ontouchstart="openSetPage(event)">Set</button>
+    <button class="center-btn center-history-btn btn-blue-bg" ontouchstart="openHistoryPage(event)">Cronologia</button>
+    <button class="center-btn center-invert-btn btn-blue-bg" ontouchstart="invertPlayers(event)">Inverti Giocatori</button>
+    <button class="center-btn center-exit-btn btn-red-bg" ontouchstart="openExitOverlay(event)">Esci</button>
+
+    <div class="player-section player-1">
+      <div class="last-container"><div id="last0" class="history-val">0</div></div>
+      <div class="header">
+        <input type="text" id="name0" class="name-input" value="GIOCATORE 1" onfocus="editName(this)" oninput="shrinkAndFit(this)" onblur="safeSync()">
+        <div class="set-dot" id="setDot0" style="background:#fff">0</div>
+      </div>
+      <div class="score" id="score0">0</div>
+      <div class="keypad">
+        <button class="key" ontouchstart="handlePress(0,'1')">1</button><button class="key" ontouchstart="handlePress(0,'2')">2</button><button class="key" ontouchstart="handlePress(0,'3')">3</button><button class="key" style="background:var(--color-clear)" ontouchstart="handlePress(0,'C')">C</button>
+        <button class="key" ontouchstart="handlePress(0,'4')">4</button><button class="key" ontouchstart="handlePress(0,'5')">5</button><button class="key" ontouchstart="handlePress(0,'6')">6</button><button class="key" ontouchstart="handlePress(0,'-')">-</button>
+        <button class="key" ontouchstart="handlePress(0,'7')">7</button><button class="key" ontouchstart="handlePress(0,'8')">8</button><button class="key" ontouchstart="handlePress(0,'9')">9</button><button class="key" ontouchstart="handlePress(0,'0')">0</button>
+      </div>
+    </div>
+
+    <div class="player-section player-2">
+      <div class="last-container"><div id="last1" class="history-val">0</div></div>
+      <div class="header">
+        <div class="set-dot" id="setDot1" style="background:var(--color-p2)">0</div>
+        <input type="text" id="name1" class="name-input" value="GIOCATORE 2" onfocus="editName(this)" oninput="shrinkAndFit(this)" onblur="safeSync()">
+      </div>
+      <div class="score" id="score1">0</div>
+      <div class="keypad">
+        <button class="key" ontouchstart="handlePress(1,'1')">1</button><button class="key" ontouchstart="handlePress(1,'2')">2</button><button class="key" ontouchstart="handlePress(1,'3')">3</button><button class="key" style="background:var(--color-clear)" ontouchstart="handlePress(1,'C')">C</button>
+        <button class="key" ontouchstart="handlePress(1,'4')">4</button><button class="key" ontouchstart="handlePress(1,'5')">5</button><button class="key" ontouchstart="handlePress(1,'6')">6</button><button class="key" ontouchstart="handlePress(1,'-')">-</button>
+        <button class="key" ontouchstart="handlePress(1,'7')">7</button><button class="key" ontouchstart="handlePress(1,'8')">8</button><button class="key" ontouchstart="handlePress(1,'9')">9</button><button class="key" ontouchstart="handlePress(1,'0')">0</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="stream-page" class="overlay">
+      <div class="exit-card" style="width:90%">
+          <div class="exit-msg" style="color:var(--btn-purple)">COLLEGAMENTO OBS</div>
+          <p style="color:white; font-size: 2.5vh; margin-bottom: 2vh;">Aggiungi una "Fonte Browser" su OBS e inserisci questo link:</p>
+          <div class="stream-url-box" id="obs-link-display">generazione in corso...</div>
+          <p style="color:#aaa; font-size: 2vh; margin-bottom: 4vh;">(Il collegamento si aggiornerà in tempo reale ad ogni tuo inserimento punti)</p>
+          <button class="choice-btn btn-no" ontouchstart="closeOverlay('stream-page')" style="width:auto; padding:0 4vw;">Chiudi</button>
+      </div>
+  </div>
+
+  <div id="set-page" class="overlay">
+    <div style="display:flex; width:100%; justify-content:space-around; align-items: center;">
+      <div style="text-align:center">
+        <div id="sn0" style="font-size:4vh; font-weight:bold; margin-bottom:2vh">G1</div>
+        <div style="display:flex; align-items:center; gap:2vw"><button class="set-ctrl-btn" ontouchstart="modSet(0,-1)">-</button><div style="font-size:8vh; width:10vh" id="mv0">0</div><button class="set-ctrl-btn" ontouchstart="modSet(0,1)">+</button></div>
+      </div>
+      <button class="btn-reset-sets" ontouchstart="resetSets(event)">Azzera Set</button>
+      <div style="text-align:center">
+        <div id="sn1" style="font-size:4vh; font-weight:bold; margin-bottom:2vh; color:var(--color-p2)">G2</div>
+        <div style="display:flex; align-items:center; gap:2vw"><button class="set-ctrl-btn" ontouchstart="modSet(1,-1)">-</button><div style="font-size:8vh; width:10vh; color:var(--color-p2)" id="mv1">0</div><button class="set-ctrl-btn" ontouchstart="modSet(1,1)">+</button></div>
+      </div>
+    </div>
+    <button class="btn-back" ontouchstart="closeOverlay('set-page')">TORNA</button>
+  </div>
+
+  <div id="history-page" class="overlay">
+      <div class="history-card">
+          <div class="history-columns">
+              <div class="history-col"><div class="col-header" id="hist-name0">G1</div><div class="log-scroll" id="log0"></div></div>
+              <div class="history-col"><div class="col-header" style="color:var(--color-p2)" id="hist-name1">G2</div><div class="log-scroll" id="log1"></div></div>
+          </div>
+          <button class="btn-back" ontouchstart="closeOverlay('history-page')">Chiudi</button>
+      </div>
+  </div>
+
+  <div id="exit-page" class="overlay">
+      <div class="exit-card">
+          <div class="exit-msg">VUOI VERAMENTE USCIRE DALL'APPLICAZIONE E CANCELLARE TUTTI I DATI DELLA PARTITA?</div>
+          <div class="exit-buttons">
+              <button class="choice-btn btn-si" ontouchstart="confirmAndReset(event)">SI</button>
+              <button class="choice-btn btn-no" ontouchstart="closeOverlay('exit-page')">NO</button>
+          </div>
+      </div>
+  </div>
+
+  <div id="final-exit-page" class="overlay">
+      <div class="exit-card">
+          <div class="exit-msg" style="color: #f1c40f; font-size: 5vh;">PER USCIRE DALL'APPLICAZIONE, PREMI IL TASTO HOME DEL TABLET</div>
+          <div style="display: flex; flex-direction: column; align-items: center; margin-top: 4vh;">
+              <button class="final-btn btn-return" ontouchstart="closeAllOverlays(event)">TORNA ALL'APPLICAZIONE</button>
+          </div>
+      </div>
+  </div>
+
+  <script>
+    // Inizializzazione Audio
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+
+    function makeDistortionCurve(amount) {
+        let k = amount, n = 44100, curve = new Float32Array(n);
+        for (let i = 0 ; i < n; ++i ) {
+            let x = i * 2 / n - 1;
+            curve[i] = (3 + k) * x * 20 * (Math.PI / 180) / (Math.PI + k * Math.abs(x));
+        }
+        return curve;
+    }
+
+    function playSound(type) {
+        if (!audioCtx) audioCtx = new AudioContext();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), dist = audioCtx.createWaveShaper();
+        dist.curve = makeDistortionCurve(100); dist.oversample = '4x';
+        osc.connect(dist); dist.connect(gain); gain.connect(audioCtx.destination);
+        let freq = 500, duration = 0.1;
+        if (type === 'clear') { freq = 300; duration = 0.2; osc.type = 'square'; }
+        else if (type === 'confirm') { freq = 600; duration = 0.22; osc.type = 'sawtooth'; }
+        else { osc.type = 'sawtooth'; }
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.21, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.start(); osc.stop(audioCtx.currentTime + duration);
+    }
+
+    // FIREBASE SETUP (Isolato in Try-Catch)
+    let db = null;
+    let matchId = "LOCAL";
+    try {
+        const firebaseConfig = {
+          apiKey: "AIzaSyCKJs9TTf7wUipvOMWG-tgfzVlpIj0kmGk",
+          authDomain: "billiard-scoreboard-3cbb5.firebaseapp.com",
+          databaseURL: "https://billiard-scoreboard-3cbb5-default-rtdb.europe-west1.firebasedatabase.app",
+          projectId: "billiard-scoreboard-3cbb5",
+          appId: "1:50403982389:web:57c2b0dbe03b4b47dec57c"
+        };
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+        matchId = localStorage.getItem('billiardMatchId');
+        if(!matchId) {
+            matchId = "TAVOLO-" + Math.floor(1000 + Math.random() * 9000);
+            localStorage.setItem('billiardMatchId', matchId);
+        }
+    } catch(e) {
+        console.warn("Firebase fallito. Modalità offline attiva.");
+    }
+
+    function safeSync() {
+        if(db) {
+            try {
+                db.ref('matches/' + matchId).set({
+                    n0: document.getElementById('name0').value,
+                    n1: document.getElementById('name1').value,
+                    s0: scores[0], s1: scores[1],
+                    st0: sets[0], st1: sets[1]
+                });
+            } catch(e) { console.warn("Errore sync"); }
+        }
+    }
+
+    // Funzioni UI
+    function shrinkAndFit(el) {
+        el.style.fontSize = "6.48vh";
+        let currentSize = 6.48;
+        while (el.scrollWidth > el.clientWidth && currentSize > 2.5) {
+            currentSize -= 0.2;
+            el.style.fontSize = currentSize + "vh";
+        }
+    }
+
+    function editName(el) { el.value = ""; el.style.fontSize = "6.48vh"; document.getElementById('global-ok-btn').style.display = 'block'; }
+    function closeKeyboard(e) { if(e) e.preventDefault(); document.activeElement.blur(); document.getElementById('global-ok-btn').style.display = 'none'; safeSync(); }
+
+    window.addEventListener('touchstart', function(e) {
+        const okBtn = document.getElementById('global-ok-btn');
+        if (okBtn.style.display === 'block') {
+            if (!e.target.classList.contains('name-input') && e.target.id !== 'global-ok-btn') { closeKeyboard(e); }
+        }
+    }, { passive: false });
+
+    // Stato Globale
+    let scores = [0,0], buffers = ["",""], timers = [null,null], sets = [0,0], isNeg = [false,false], pLogs = [[], []];
+
+    function handlePress(p, k) {
+      let display = document.getElementById('score'+p);
+      if(k === 'C') { 
+          if(buffers[p] !== "" || isNeg[p]) { 
+              if(timers[p]) clearTimeout(timers[p]); 
+              buffers[p] = ""; isNeg[p] = false; display.innerText = scores[p]; display.classList.remove('score-blink'); 
+          }
+          return; 
+      }
+      if(timers[p]) clearTimeout(timers[p]);
+      playSound('click');
+      
+      if(k === '-') isNeg[p] = !isNeg[p]; else buffers[p] += k;
+      display.innerText = (isNeg[p] ? "-" : "") + buffers[p];
+      display.classList.add('score-blink');
+      
+      timers[p] = setTimeout(() => {
+          let v = parseInt(buffers[p]) * (isNeg[p] ? -1 : 1);
+          if(!isNaN(v)) { 
+              scores[p] += v; 
+              document.getElementById('last'+p).innerText = (v > 0 ? "+" : "") + v; 
+              pLogs[p].unshift(`<div class="log-entry"><span>Tiro ${pLogs[p].length+1}</span><span class="tiro-val ${v>0?'plus':'minus'}">${v>0?'+':''}${v}</span></div>`); 
+              playSound('confirm'); 
+          }
+          buffers[p] = ""; isNeg[p] = false; display.classList.remove('score-blink'); 
+          updateUI();
+      }, 2000); 
+    }
+
+    function updateUI() {
+        document.getElementById('score0').innerText = scores[0]; document.getElementById('score1').innerText = scores[1];
+        document.getElementById('setDot0').innerText = sets[0]; document.getElementById('setDot1').innerText = sets[1];
+        safeSync();
+    }
+    
+    function modSet(p, d) { playSound('click'); sets[p] = Math.max(0, sets[p]+d); document.getElementById('mv'+p).innerText = sets[p]; updateUI(); }
+    function resetSets(e) { if(e) e.preventDefault(); sets[0] = 0; sets[1] = 0; document.getElementById('mv0').innerText = 0; document.getElementById('mv1').innerText = 0; updateUI(); }
+    
+    function openStreamPage(e) { 
+        e.preventDefault(); playSound('click'); 
+        let repoUrl = window.location.href.split('?')[0]; 
+        repoUrl = repoUrl.replace('index.html', ''); 
+        document.getElementById('obs-link-display').innerText = `${repoUrl}obs.html?id=${matchId}`; 
+        document.getElementById('stream-page').style.display='flex'; 
+        safeSync(); 
+    }
+    
+    function openSetPage(e) { e.preventDefault(); playSound('click'); document.getElementById('sn0').innerText = document.getElementById('name0').value; document.getElementById('sn1').innerText = document.getElementById('name1').value; document.getElementById('mv0').innerText = sets[0]; document.getElementById('mv1').innerText = sets[1]; document.getElementById('set-page').style.display='flex'; }
+    function openHistoryPage(e) { e.preventDefault(); playSound('click'); document.getElementById('hist-name0').innerText = document.getElementById('name0').value; document.getElementById('hist-name1').innerText = document.getElementById('name1').value; document.getElementById('log0').innerHTML = pLogs[0].join(""); document.getElementById('log1').innerHTML = pLogs[1].join(""); document.getElementById('history-page').style.display='flex'; }
+    function closeOverlay(id) { if(id === 'exit-page' || id === 'final-exit-page' || id === 'stream-page') playSound('click'); document.getElementById(id).style.display='none'; }
+    
+    function invertPlayers(e) { 
+        e.preventDefault(); playSound('confirm');
+        [document.getElementById('name0').value, document.getElementById('name1').value] = [document.getElementById('name1').value, document.getElementById('name0').value]; 
+        [scores[0], scores[1]] = [scores[1], scores[0]]; [sets[0], sets[1]] = [sets[1], sets[0]]; [pLogs[0], pLogs[1]] = [pLogs[1], pLogs[0]]; 
+        updateUI(); shrinkAndFit(document.getElementById('name0')); shrinkAndFit(document.getElementById('name1')); 
+    }
+
+    function openExitOverlay(e) { e.preventDefault(); playSound('click'); document.getElementById('exit-page').style.display = 'flex'; }
+
+    function confirmAndReset(e) {
+        e.preventDefault(); playSound('click');
+        scores = [0, 0]; buffers = ["", ""]; sets = [0, 0]; isNeg = [false, false]; pLogs = [[], []];
+        document.getElementById('name0').value = "GIOCATORE 1"; document.getElementById('name1').value = "GIOCATORE 2";
+        document.getElementById('last0').innerText = "0"; document.getElementById('last1').innerText = "0";
+        updateUI(); shrinkAndFit(document.getElementById('name0')); shrinkAndFit(document.getElementById('name1'));
+        document.getElementById('exit-page').style.display = 'none'; document.getElementById('final-exit-page').style.display = 'flex';    
+    }
+
+    function closeAllOverlays(e) {
+        e.preventDefault(); playSound('click');
+        document.getElementById('exit-page').style.display = 'none'; document.getElementById('final-exit-page').style.display = 'none';
+    }
+
+    document.getElementById('name0').addEventListener('input', safeSync);
+    document.getElementById('name1').addEventListener('input', safeSync);
+  </script>
+</body>
+</html>
