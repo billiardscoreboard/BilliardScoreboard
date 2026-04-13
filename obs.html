@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Billiard Scoreboard - OBS Overlay Solid</title>
+  <title>Billiard Scoreboard - OBS Overlay Updated</title>
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
   <style>
@@ -11,7 +11,7 @@
     body {
       margin: 0;
       padding: 0;
-      background: transparent; /* Sfondo pagina trasparente per OBS */
+      background: transparent;
       font-family: 'Roboto', sans-serif;
       overflow: hidden;
       display: flex;
@@ -20,11 +20,11 @@
       padding-top: 20px;
     }
 
-    /* BARRA PRINCIPALE - OPACITÀ ELIMINATA (SOLIDA) */
+    /* BARRA PRINCIPALE SOLIDA */
     .scoreboard-container {
       display: flex;
       align-items: center;
-      background: #071f14; /* Colore pieno, senza trasparenza */
+      background: #071f14; 
       border: 3px solid #000;
       border-radius: 10px;
       padding: 10px 20px;
@@ -38,7 +38,6 @@
       gap: 15px;
     }
 
-    /* ICONE GIOCATORI */
     .player-icon {
       height: 50px;
       width: auto;
@@ -60,9 +59,10 @@
       text-align: center;
     }
 
+    /* SET - SFONDO VERDE CHIARO */
     .sets {
       font-size: 24px;
-      background: #fff;
+      background: #2ecc71; /* Verde chiaro brillante */
       color: #000;
       width: 35px;
       height: 35px;
@@ -73,20 +73,20 @@
       font-weight: bold;
     }
 
-    /* SCRITTA VS - INGRANDITA E NERO LUCIDO */
+    /* SCRITTA VS - ROSSA E INGRANDITA */
     .divider {
       width: 50px;
       text-align: center;
-      font-size: 24px; /* Ingrandito del 20% (da 20px a 24px) */
-      color: #000000; /* Nero */
+      font-size: 24px;
+      color: #ff0000; /* Rosso */
       font-weight: 900;
-      text-shadow: 0px 1px 1px rgba(255,255,255,0.2); /* Leggerissimo riflesso per effetto lucido */
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
     }
 
-    /* COLORI SPECIFICI P2 (GIALLO) */
+    /* COLORI SPECIFICI P2 */
     .p2-name { color: #facc15; }
     .p2-score { color: #facc15 !important; }
-    .p2-sets { background: #facc15 !important; }
+    .p2-sets { background: #facc15 !important; } /* Mantenuto giallo per distinguere il giocatore */
 
   </style>
 </head>
@@ -111,7 +111,6 @@
   </div>
 
 <script>
-  // Configurazione Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyCKJs9TTf7wUipvOMWG-tgfzVlpIj0kmGk",
     authDomain: "billiard-scoreboard-3cbb5.firebaseapp.com",
