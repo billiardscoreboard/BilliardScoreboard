@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Billiard Scoreboard - OBS Overlay Orange & Dark Green</title>
+  <title>Billiard Scoreboard - OBS Overlay No VS</title>
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
   <style>
@@ -27,9 +27,10 @@
       background: #071f14; 
       border: 3px solid #000;
       border-radius: 10px;
-      padding: 10px 20px;
+      padding: 10px 30px; /* Aumentato padding laterale */
       color: white;
       box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+      gap: 40px; /* Spazio tra i due giocatori ora che non c'è il VS */
     }
 
     .player-box {
@@ -49,11 +50,11 @@
       min-width: 150px;
     }
 
-    /* PUNTEGGI - VERDE LEGGERMENTE PIÙ SCURO */
+    /* PUNTEGGI - VERDE BOSCO */
     .score {
       font-size: 45px;
       color: #fff;
-      background: #164d34; /* Verde scurito come richiesto */
+      background: #164d34; 
       padding: 0 15px;
       border-radius: 5px;
       min-width: 60px;
@@ -73,16 +74,6 @@
       font-weight: bold;
     }
 
-    /* SCRITTA VS - ARANCIONE */
-    .divider {
-      width: 50px;
-      text-align: center;
-      font-size: 24px;
-      color: #ffa500; /* Arancione */
-      font-weight: 900;
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-    }
-
     /* COLORI SPECIFICI P2 */
     .p2-name { color: #facc15; }
     .p2-score { color: #facc15 !important; }
@@ -99,8 +90,6 @@
       <div id="st0" class="sets">0</div>
       <div id="score0" class="score">0</div>
     </div>
-
-    <div class="divider">VS</div>
 
     <div class="player-box">
       <div id="score1" class="score p2-score">0</div>
