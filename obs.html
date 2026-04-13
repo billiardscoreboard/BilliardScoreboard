@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Billiard Scoreboard - OBS Overlay</title>
+  <title>Billiard Scoreboard - OBS Overlay Solid</title>
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
   <style>
@@ -11,7 +11,7 @@
     body {
       margin: 0;
       padding: 0;
-      background: transparent; /* Sfondo trasparente per OBS */
+      background: transparent; /* Sfondo pagina trasparente per OBS */
       font-family: 'Roboto', sans-serif;
       overflow: hidden;
       display: flex;
@@ -20,11 +20,11 @@
       padding-top: 20px;
     }
 
-    /* BARRA PRINCIPALE DEL PUNTEGGIO */
+    /* BARRA PRINCIPALE - OPACITÀ ELIMINATA (SOLIDA) */
     .scoreboard-container {
       display: flex;
       align-items: center;
-      background: rgba(7, 31, 20, 0.95); /* Colore scuro come index.html */
+      background: #071f14; /* Colore pieno, senza trasparenza */
       border: 3px solid #000;
       border-radius: 10px;
       padding: 10px 20px;
@@ -40,7 +40,7 @@
 
     /* ICONE GIOCATORI */
     .player-icon {
-      height: 50px; /* Adattate alla barra */
+      height: 50px;
       width: auto;
     }
 
@@ -73,12 +73,14 @@
       font-weight: bold;
     }
 
-    /* DIVISORE CENTRALE */
+    /* SCRITTA VS - INGRANDITA E NERO LUCIDO */
     .divider {
-      width: 40px;
+      width: 50px;
       text-align: center;
-      font-size: 20px;
-      color: #555;
+      font-size: 24px; /* Ingrandito del 20% (da 20px a 24px) */
+      color: #000000; /* Nero */
+      font-weight: 900;
+      text-shadow: 0px 1px 1px rgba(255,255,255,0.2); /* Leggerissimo riflesso per effetto lucido */
     }
 
     /* COLORI SPECIFICI P2 (GIALLO) */
@@ -109,7 +111,7 @@
   </div>
 
 <script>
-  // Configurazione Firebase (Stessa del tuo file index.html)
+  // Configurazione Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyCKJs9TTf7wUipvOMWG-tgfzVlpIj0kmGk",
     authDomain: "billiard-scoreboard-3cbb5.firebaseapp.com",
@@ -121,7 +123,6 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // Recupera l'ID del tavolo dall'URL (?id=TAVOLO-XXXX)
   const urlParams = new URLSearchParams(window.location.search);
   const matchId = urlParams.get('id');
 
@@ -139,7 +140,7 @@
       }
     });
   } else {
-    document.body.innerHTML = "<div style='color:white; background:red; padding:20px;'>ERRORE: ID TAVOLO MANCANTE NELL'URL</div>";
+    document.body.innerHTML = "<div style='color:white; background:red; padding:20px;'>ERRORE: ID TAVOLO MANCANTE</div>";
   }
 </script>
 </body>
