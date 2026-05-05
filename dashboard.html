@@ -5,117 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Direzione Gara - Biliardi</title>
 
-    <!-- Librerie Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     
-    <!-- Librerie per esportazione PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f4f6f9; color: #333; overflow-x: hidden; display: flex; height: 100vh; }
-        
-        #login-screen { position: absolute; top:0; left:0; width:100%; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #eef2f5; z-index: 1000;}
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #f4f6f9; display: flex; height: 100vh; }
+        #login-screen { position: absolute; width:100%; height: 100vh; background: #eef2f5; display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-        .login-input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
-        .btn-login { width: 100%; padding: 12px; background: #1a237e; color: white; border: none; border-radius: 6px; font-size: 1.1rem; cursor: pointer; font-weight: bold; margin-top: 10px;}
-
-        .pwd-container { position: relative; width: 100%; margin: 10px 0; }
-        .pwd-container .login-input { margin: 0; padding-right: 45px; }
-        .pwd-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 1.2rem; user-select: none; }
-        .remember-container { display: flex; align-items: center; width: 100%; margin-bottom: 10px; color: #555; font-size: 0.95rem; }
-        .remember-container input { margin-right: 8px; cursor: pointer; width: 16px; height: 16px; }
-
+        .login-input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; }
+        .btn-login { width: 100%; padding: 12px; background: #1a237e; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
         #dashboard-screen { display: none; width: 100%; height: 100vh; }
-        
-        .sidebar { width: 280px; background: #ffffff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; box-shadow: 2px 0 5px rgba(0,0,0,0.02); z-index: 10; flex-shrink: 0; overflow-y: auto;}
+        .sidebar { width: 280px; background: white; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; }
         .logo-area { padding: 30px 20px; text-align: center; border-bottom: 1px solid #e0e0e0; }
-        .logo-area h2 { font-size: 1.2rem; color: #2c3e50; margin-top: 10px; }
-        .user-email { font-size: 0.85rem; color: #7f8c8d; margin-top: 5px; word-break: break-all; font-weight: bold; }
-        
-        .nav-menu { flex: 1; padding-top: 20px; display: flex; flex-direction: column; }
-        .nav-item { padding: 15px 25px; color: #34495e; text-decoration: none; font-weight: 600; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; border-left: 4px solid transparent; transition: 0.2s;}
-        .nav-item:hover { background: #f8f9fa; }
+        .nav-menu { flex: 1; padding-top: 20px; }
+        .nav-item { padding: 15px 25px; color: #34495e; cursor: pointer; display: flex; align-items: center; text-decoration: none; font-weight: 600; }
         .nav-item.active { background: #f0f4f8; color: #1a237e; border-left: 4px solid #1a237e; }
-        .nav-item span { margin-right: 15px; font-size: 1.3rem; }
-
-        .nav-item-wrapper { position: relative; display: flex; align-items: center; }
-        .nav-item-wrapper .nav-item { flex: 1; padding-right: 50px; }
-        .btn-add-folder { position: absolute; right: 15px; background: none; border: none; font-size: 1.8rem; font-weight: bold; color: #95a5a6; cursor: pointer; transition: 0.2s; padding: 0 5px; line-height: 1; }
-        
-        .sidebar-folders { display: flex; flex-direction: column; background: #fafbfc; border-bottom: 1px solid #e0e0e0;}
-        .nav-sub-item { position: relative; padding: 10px 15px 10px 50px; color: #34495e; text-decoration: none; font-weight: 500; font-size: 1rem; cursor: pointer; display: flex; align-items: center; border-left: 4px solid transparent; transition: 0.2s;}
-        .nav-sub-item:hover { background: #f0f2f5; }
-        .nav-sub-item.active { background: #e8eaf6; color: #1a237e; border-left-color: #1a237e; font-weight: 600;}
-        .nav-sub-item span.f-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: padding-right 0.2s; }
-        .nav-sub-item:hover span.f-name { padding-right: 55px; }
-        
-        .folder-actions-side { display: none; position: absolute; right: 10px; gap: 5px; background: inherit; padding-left: 5px;}
-        .nav-sub-item:hover .folder-actions-side { display: flex; }
-        .btn-side-action { background: none; border: none; cursor: pointer; font-size: 1rem; opacity: 0.6; transition: 0.2s;}
-
-        .main-content { flex: 1; padding: 40px; overflow-y: auto; background: #f4f6f9; }
-        .tab-section { display: none; }
-        .tab-section.active { display: block; }
-
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .header h1 { color: #1a237e; font-size: 1.8rem; }
-        .header-btns { display: flex; gap: 15px; }
-        
-        .btn-action-header { color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .btn-add { background: #27ae60; }
-
-        .table-row { display: flex; align-items: center; background: white; padding: 15px 20px; border-radius: 50px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); gap: 10px;}
-        .drag-handle { cursor: grab; font-size: 1.8rem; color: #95a5a6; width: 30px; display: flex; align-items: center; justify-content: center;}
-        
-        .table-identity { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 140px; flex-shrink: 0; }
-        .table-real-id { font-size: 0.65rem; color: #95a5a6; font-weight: bold; margin-bottom: 4px; text-transform: uppercase;}
-        .table-name-input { background: #1a237e; color: white; padding: 0 10px; height: 40px; border-radius: 20px; font-weight: bold; font-size: 1rem; width: 100%; text-align: center; border: 2px solid transparent; outline: none; }
-        
-        .pill { border-radius: 30px; border: 1px solid #ccc; height: 50px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 1.1rem; }
-        .pill-name { flex: 2; padding: 0 15px; }
-        .pill-name input { width: 100%; border: none; background: transparent; text-align: center; font-weight: 600; font-size: 1.2rem; color: #e67e22; outline: none; }
-        .pill-score { flex: 1; border-color: #e67e22; color: #e67e22; font-size: 1.6rem; }
-        
-        .pill-match { flex: 0.7; color: #1a237e; border-color: #1a237e; font-size: 1rem; cursor: pointer; flex-direction: column; }
-        .set-display { flex-direction: column; align-items: center; justify-content: center; width: 100%; pointer-events: none; }
-        
-        .p2-score { background: #f39c12; color: white; border-color: #f39c12; }
-        .p2-name { background: #f39c12; color: white; border-color: #f39c12; }
-        .p2-name input { color: white; }
-
-        .btn-invert { background: #34495e; color: white; border: none; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; cursor: pointer; margin: 0 5px; flex-shrink: 0; }
-
-        .action-btns { display: flex; gap: 8px; margin-left: auto; }
-        .btn-reset { background: #95a5a6; color: white; border: none; height: 40px; padding: 0 15px; border-radius: 20px; font-weight: bold; cursor: pointer; }
-        .btn-termina { background: #27ae60; color: white; border: none; height: 40px; padding: 0 15px; border-radius: 20px; font-weight: bold; cursor: pointer; }
-        .btn-remove { background: white; border: 2px solid #e74c3c; color: #e74c3c; width: 40px; height: 40px; border-radius: 50%; font-weight: bold; cursor: pointer; }
-
-        .history-card { position: relative; background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid #1a237e; }
-        .history-card-actions { position: absolute; top: 15px; right: 15px; display: flex; align-items: center; gap: 10px; }
-        .btn-history-action { background: none; border: none; font-size: 1.4rem; cursor: pointer; opacity: 0.6; }
-        .sposta-in-select { background: #f8f9fa; border: 1px solid #bdc3c7; border-radius: 6px; padding: 4px 8px; font-size: 0.9rem; cursor: pointer; outline: none; font-weight: bold;}
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 20px; border-radius: 12px; margin-bottom: 30px; }
+        .btn-add { background: #27ae60; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .table-row { display: flex; align-items: center; background: white; padding: 15px 20px; border-radius: 50px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .pill { border-radius: 30px; border: 1px solid #ccc; height: 40px; display: flex; align-items: center; justify-content: center; padding: 0 15px; margin: 0 5px; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
         <div class="login-box">
-            <h2 style="margin-bottom: 20px; color: #1a237e;">Direzione Gara</h2>
-            <form id="login-form" onsubmit="eseguiLogin(event)">
-                <input type="email" id="email" class="login-input" placeholder="Email Utente" required>
-                <div class="pwd-container">
-                    <input type="password" id="pwd" class="login-input" placeholder="Password" required>
-                    <span class="pwd-toggle" id="eye-icon" onclick="togglePassword()">👁️</span>
-                </div>
-                <div class="remember-container">
-                    <input type="checkbox" id="ricordami">
-                    <label for="ricordami">Ricorda credenziali</label>
-                </div>
-                <div id="error-msg" style="color: red; margin: 10px 0; display: none;">Credenziali errate</div>
+            <h2>Direzione Gara</h2>
+            <form onsubmit="eseguiLogin(event)">
+                <input type="email" id="email" class="login-input" placeholder="Email" required>
+                <input type="password" id="pwd" class="login-input" placeholder="Password" required>
                 <button type="submit" class="btn-login">ACCEDI</button>
             </form>
         </div>
@@ -124,56 +48,19 @@
     <div id="dashboard-screen">
         <nav class="sidebar">
             <div class="logo-area">
-                <h2>Direzione Gara</h2>
-                <div id="user-email-display" class="user-email"></div>
-                <div id="status-led" style="width: 12px; height: 12px; border-radius: 50%; background: #95a5a6; margin: 10px auto; border: 2px solid #fff; box-shadow: 0 0 5px rgba(0,0,0,0.2);"></div>
+                <h3>Dashboard</h3>
+                <div id="status-led" style="width:10px; height:10px; border-radius:50%; background:gray; margin:10px auto;"></div>
             </div>
             <div class="nav-menu">
-                <a class="nav-item active" id="menu-biliardi" onclick="cambiaScheda('biliardi')"><span>🕹️</span> Biliardi</a>
-                <div class="nav-item-wrapper" id="menu-storico-wrapper">
-                    <a class="nav-item" id="menu-storico" onclick="cambiaScheda('storico', 'root')"><span>🕒</span> Storico</a>
-                    <button class="btn-add-folder" onclick="creaCartellaStorico()">+</button>
-                </div>
-                <div id="sidebar-folders" class="sidebar-folders"></div>
-                <a class="nav-sub-item" id="nav-folder-trash" onclick="cambiaScheda('storico', 'trash')">
-                    <span class="f-icon" style="color: #e74c3c;">🗑️</span>
-                    <span class="f-name">Cestino</span>
-                </a>
-                <a class="nav-item" style="margin-top: auto; color: #e74c3c;" onclick="eseguiLogout()"><span>🚪</span> Logout</a>
+                <div class="nav-item active">🕹️ Biliardi</div>
             </div>
         </nav>
-
         <main class="main-content">
-            <div id="sez-biliardi" class="tab-section active">
-                <div class="header">
-                    <div>
-                        <h1>Gestione Segnapunti</h1>
-                        <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 0.95rem; font-weight: bold; color: #e67e22;">Archiviazione:</span>
-                            <select id="global-folder-select" class="sposta-in-select" onchange="impostaCartellaDefault(this.value)">
-                                <option value="root">Storico Principale</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="header-btns">
-                        <button class="btn-action-header btn-add" onclick="aggiungiTavolo()">➕ AGGIUNGI BILIARDO</button>
-                    </div>
-                </div>
-                <div id="tables-container">
-                    <p style="text-align: center; color: #7f8c8d; font-size: 1.2rem; margin-top: 50px;">Nessun biliardo collegato.</p>
-                </div>
+            <div class="header">
+                <h1>I tuoi Biliardi</h1>
+                <button class="btn-add" onclick="aggiungiTavolo()">➕ AGGIUNGI BILIARDO</button>
             </div>
-
-            <div id="sez-storico" class="tab-section">
-                <div class="header">
-                    <h1 id="storico-main-title">Storico Partite</h1>
-                    <div class="header-btns">
-                        <button class="btn-action-header" style="background: #2980b9;" onclick="scaricaCartellaPDF()">📥 SCARICA PDF</button>
-                        <button id="btn-empty-history" class="btn-action-header" style="background: #e74c3c;" onclick="svuotaStorico()">🗑️ SVUOTA</button>
-                    </div>
-                </div>
-                <div id="history-container"></div>
-            </div>
+            <div id="tables-container"></div>
         </main>
     </div>
 
@@ -186,160 +73,55 @@
         appId: "1:50403982389:web:57c2b0dbe03b4b47dec57c" 
     };
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database(); 
+    const db = firebase.database();
     const auth = firebase.auth();
 
-    let userId = null; 
-    let mieiTavoli = {}; 
-    let tuttiITavoli = {}; 
-    let matchBuffers = {}; 
-    let rawStorico = {};
-    let rawFolders = {};
-    let currentFolderView = 'root'; 
-    let defaultFolderId = 'root';
+    let userId = null;
+    let mieiTavoli = {};
 
-    function togglePassword() {
-        const pwdInput = document.getElementById('pwd');
-        pwdInput.type = pwdInput.type === "password" ? "text" : "password";
+    function eseguiLogin(e) {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const pass = document.getElementById('pwd').value;
+        auth.signInWithEmailAndPassword(email, pass);
     }
-
-    function eseguiLogin(event) {
-        event.preventDefault(); 
-        const e = document.getElementById('email').value;
-        const p = document.getElementById('pwd').value;
-        auth.signInWithEmailAndPassword(e, p).catch(() => document.getElementById('error-msg').style.display = 'block');
-    }
-
-    function eseguiLogout() { auth.signOut(); location.reload(); }
 
     auth.onAuthStateChanged(user => {
         if(user) {
             userId = user.uid;
-            document.getElementById('status-led').style.background = "#27ae60";
-            document.getElementById('user-email-display').innerText = user.email;
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('dashboard-screen').style.display = 'flex';
+            document.getElementById('status-led').style.background = 'green';
             
-            db.ref('users/' + userId + '/settings/defaultFolder').on('value', snap => {
-                defaultFolderId = snap.val() || 'root';
-                if(document.getElementById('global-folder-select')) document.getElementById('global-folder-select').value = defaultFolderId;
+            db.ref('users/' + userId + '/miei_tavoli').on('value', s => {
+                mieiTavoli = s.val() || {};
+                disegnaTabellone();
             });
-            avviaAscoltoDati(); 
-            avviaAscoltoStorico();
         }
     });
 
     function aggiungiTavolo() {
-        if (!userId) return alert("Devi essere loggato!");
-        
-        // Inizializza mieiTavoli se non esiste per evitare crash del prompt
-        if (typeof mieiTavoli !== 'object' || mieiTavoli === null) {
-            mieiTavoli = {};
+        const id = prompt("Inserisci ID Tablet (es. TAVOLO-1):", "TAVOLO-");
+        if(id && id !== "TAVOLO-") {
+            db.ref('users/' + userId + '/miei_tavoli/' + id).set({ nome: id, ordine: 0 })
+              .then(() => alert("Aggiunto!"))
+              .catch(err => alert("Errore: " + err.message));
         }
-
-        let nuovoID = prompt("Inserisci l'ID esatto del tablet (es. TAVOLO-1234):", "TAVOLO-");
-        
-        if (nuovoID && nuovoID.trim() !== "" && nuovoID !== "TAVOLO-") {
-            let idSalvato = nuovoID.trim();
-            let numTavoli = Object.keys(mieiTavoli).length;
-            
-            // Scrittura diretta su Firebase
-            db.ref('users/' + userId + '/miei_tavoli/' + idSalvato).set({
-                nome: idSalvato,
-                ordine: numTavoli
-            }).then(() => {
-                alert("Tavolo " + idSalvato + " collegato con successo!");
-            }).catch((err) => {
-                alert("Errore di permessi: Assicurati di aver configurato le Rules su Firebase.");
-                console.error(err);
-            });
-        }
-    }
-
-    function avviaAscoltoDati() {
-        db.ref('users/' + userId + '/miei_tavoli').on('value', s => { 
-            mieiTavoli = s.val() || {}; 
-            disegnaTabellone(); 
-        });
-        db.ref('matches').on('value', s => { 
-            tuttiITavoli = s.val() || {}; 
-            disegnaTabellone(); 
-        });
     }
 
     function disegnaTabellone() {
         const container = document.getElementById('tables-container');
-        const tavoliSorted = Object.keys(mieiTavoli).sort((a, b) => (mieiTavoli[a].ordine || 0) - (mieiTavoli[b].ordine || 0));
-        
-        if(tavoliSorted.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: #7f8c8d; font-size: 1.2rem; margin-top: 50px;">Nessun biliardo collegato.</p>';
-            return;
-        }
-
         container.innerHTML = '';
-        tavoliSorted.forEach(matchId => {
-            const dati = tuttiITavoli[matchId] || { n0: 'G1', n1: 'G2', s0: 0, s1: 0, st0: 0, st1: 0 };
-            const nomeDaMostrare = mieiTavoli[matchId].nome || matchId;
-            const row = document.createElement('div');
-            row.className = 'table-row';
-            row.innerHTML = `
-                <div class="drag-handle">☰</div>
-                <div class="table-identity">
-                    <div class="table-real-id">ID: ${matchId}</div>
-                    <input type="text" class="table-name-input" value="${nomeDaMostrare}" onchange="salvaNome('${matchId}', this.value)">
-                </div>
-                <div class="pill pill-name"><input type="text" value="${dati.n0}" onchange="updateLive('${matchId}', 'n0', this.value)"></div>
-                <div class="pill pill-match"><div>${dati.st0}</div><small>Set</small></div>
-                <div class="pill pill-score">${dati.s0}</div>
-                <button class="btn-invert" onclick="inverti('${matchId}')">⇄</button>
-                <div class="pill pill-score p2-score">${dati.s1}</div>
-                <div class="pill pill-match p2-match"><div>${dati.st1}</div><small>Set</small></div>
-                <div class="pill pill-name p2-name"><input type="text" value="${dati.n1}" onchange="updateLive('${matchId}', 'n1', this.value)"></div>
-                <div class="action-btns">
-                    <button class="btn-reset" onclick="resetTavolo('${matchId}')">🔄</button>
-                    <button class="btn-remove" onclick="rimuoviTavolo('${matchId}')">🗑️</button>
-                </div>
-            `;
-            container.appendChild(row);
+        Object.keys(mieiTavoli).forEach(id => {
+            const div = document.createElement('div');
+            div.className = 'table-row';
+            div.innerHTML = `<div class="pill">${mieiTavoli[id].nome}</div><button onclick="rimuovi('${id}')">🗑️</button>`;
+            container.appendChild(div);
         });
     }
 
-    function updateLive(id, k, v) { db.ref('matches/' + id).update({ [k]: v }); }
-    function salvaNome(id, n) { db.ref('users/' + userId + '/miei_tavoli/' + id).update({ nome: n }); }
-    function rimuoviTavolo(id) { if(confirm("Scollegare tavolo?")) db.ref('users/' + userId + '/miei_tavoli/' + id).remove(); }
-    function resetTavolo(id) { if(confirm("Resettare punti?")) db.ref('matches/' + id).update({ s0:0, s1:0, st0:0, st1:0 }); }
-
-    function cambiaScheda(s, f = 'root') {
-        document.querySelectorAll('.tab-section').forEach(el => el.classList.remove('active'));
-        document.getElementById('sez-' + s).classList.add('active');
-        if(s === 'storico') { currentFolderView = f; renderStoricoMatches(); }
-    }
-
-    function avviaAscoltoStorico() {
-        db.ref('users/'+userId+'/storico_folders').on('value', s => { rawFolders = s.val() || {}; updateFolderMenu(); });
-        db.ref('users/'+userId+'/storico').on('value', s => { rawStorico = s.val() || {}; renderStoricoMatches(); });
-    }
-
-    function updateFolderMenu() {
-        const container = document.getElementById('sidebar-folders');
-        container.innerHTML = '';
-        Object.keys(rawFolders).forEach(fId => {
-            const a = document.createElement('a'); a.className = 'nav-sub-item';
-            a.onclick = () => cambiaScheda('storico', fId);
-            a.innerHTML = `<span class="f-icon">📁</span><span class="f-name">${rawFolders[fId].name}</span>`;
-            container.appendChild(a);
-        });
-    }
-
-    function renderStoricoMatches() {
-        const container = document.getElementById('history-container');
-        container.innerHTML = '';
-        const partite = Object.entries(rawStorico).map(([k,v])=>({k,...v})).filter(p => (p.folderId||'root') === currentFolderView);
-        partite.forEach(p => {
-            const card = document.createElement('div'); card.className = 'history-card';
-            card.innerHTML = `<div class="history-date">${p.data}</div><div>${p.nome1} vs ${p.nome2}</div>`;
-            container.appendChild(card);
-        });
+    function rimuovi(id) {
+        if(confirm("Rimuovere?")) db.ref('users/' + userId + '/miei_tavoli/' + id).remove();
     }
 </script>
 </body>
