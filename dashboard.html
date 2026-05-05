@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direzione Gara - Biliardi</title>
+
+    <!-- Librerie Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+
+    <!-- Librerie per esportazione PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f6f9; color: #333; overflow-x: hidden; display: flex; height: 100vh; }
+        
+        /* SCHERMATA LOGIN */
+        #login-screen { position: absolute; top:0; left:0; width:100%; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #eef2f5; z-index: 1000;}
+        .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        .login-input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
+        .btn-login { width: 100%; padding: 12px; background: #1a237e; color: white; border: none; border-radius: 6px; font-size: 1.1rem; cursor: pointer; font-weight: bold; margin-top: 10px;}
+
+        /* UTILITY LOGIN */
+        .pwd-container { position: relative; width: 100%; margin: 10px 0; }
+        .pwd-container .login-input { margin: 0; padding-right: 45px; }
+        .pwd-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 1.2rem; user-select: none; }
+        .remember-container { display: flex; align-items: center; width: 100%; margin-bottom: 10px; color: #555; font-size: 0.95rem; }
+        .remember-container input { margin-right: 8px; cursor: pointer; width: 16px; height: 16px; }
+        .remember-container label { cursor: pointer; }
+
+        /* LAYOUT PRINCIPALE CON SIDEBAR */
+        #dashboard-screen { display: none; width: 100%; height: 100vh; }
+        
+        /* SIDEBAR LATERALE */
+        .sidebar { width: 280px; background: #ffffff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; box-shadow: 2px 0 5px rgba(0,0,0,0.02); z-index: 10; flex-shrink: 0; overflow-y: auto;}
+        .logo-area { padding: 30px 20px; text-align: center; border-bottom: 1px solid #e0e0e0; }
+        .logo-area svg { width: 80px; height: auto; display: block; margin: 0 auto 10px auto; }
+        .logo-area h2 { font-size: 1.2rem; color: #2c3e50; margin-top: 10px; }
+        .user-email { font-size: 0.85rem; color: #7f8c8d; margin-top: 5px; word-break: break-all; font-weight: bold; }
+        
+        .nav-menu { flex: 1; padding-top: 20px; display: flex; flex-direction: column; }
+        .nav-item { padding: 15px 25px; color: #34495e; text-decoration: none; font-weight: 600; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; border-left: 4px solid transparent; transition: 0.2s;}
+        .nav-item:hover { background: #f8f9fa; }
+        .nav-item.active { background: #f0f4f8; color: #1a237e; border-left: 4px solid #1a237e; }
+        .nav-item span { margin-right: 15px; font-size: 1.3rem; }
+
+        /* MENU STORICO OUTLOOK-LIKE */
+        .nav-item-wrapper { position: relative; display: flex; align-items: center; }
+        .nav-item-wrapper .nav-item { flex: 1; padding-right: 50px; }
+        .btn-add-folder { position: absolute; right: 15px; background: none; border: none; font-size: 1.8rem; font-weight: bold; color: #95a5a6; cursor: pointer; transition: 0.2s; padding: 0 5px; line-height: 1; }
+        .btn-add-folder:hover { color: #1a237e; transform: scale(1.1); }
+        
+        .sidebar-folders { display: flex; flex-direction: column; background: #fafbfc; border-bottom: 1px solid #e0e0e0;}
+        .nav-sub-item { position: relative; padding: 10px 15px 10px 50px; color: #34495e; text-decoration: none; font-weight: 500; font-size: 1rem; cursor: pointer; display: flex; align-items: center; border-left: 4px solid transparent; transition: 0.2s;}
+        .nav-sub-item:hover { background: #f0f2f5; }
+        .nav-sub-item.active { background: #e8eaf6; color: #1a237e; border-left-color: #1a237e; font-weight: 600;}
+        .nav-sub-item.drag-over, .nav-item-wrapper.drag-over .nav-item { background: #d4efdf; border-left-color: #27ae60; color: #27ae60;}
+        .nav-sub-item span.f-icon { margin-right: 10px; font-size: 1.1rem; }
+        
+        /* FIX TRONCAMENTO NOME CARTELLA: Fa spazio ai tastini in hover per non sormontare il testo */
+        .nav-sub-item span.f-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: padding-right 0.2s; }
+        .nav-sub-item:hover span.f-name { padding-right: 55px; }
+        
+        .folder-actions-side { display: none; position: absolute; right: 10px; gap: 5px; background: inherit; padding-left: 5px;}
+        .nav-sub-item:hover .folder-actions-side { display: flex; }
+        .btn-side-action { background: none; border: none; cursor: pointer; font-size: 1rem; opacity: 0.6; transition: 0.2s;}
+        .btn-side-action:hover { opacity: 1; transform: scale(1.2); }
+        
+        /* CONTENUTO PRINCIPALE */
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; background: #f4f6f9; }
+        .tab-section { display: none; }
+        .tab-section.active { display: block; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .header h1 { color: #1a237e; font-size: 1.8rem; }
+        .header-btns { display: flex; gap: 15px; }
+        
+        /* TASTI GENERICI HEADER */
+        .btn-action-header { color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-add { background: #27ae60; }
+        .btn-add:hover { background: #219150; }
+
+        /* DESIGN BILIARDI CON DRAG & DROP */
+        .table-row { display: flex; align-items: center; background: white; padding: 15px 20px; border-radius: 50px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); gap: 10px; transition: transform 0.1s;}
+        .table-row.dragging { opacity: 0.4; background: #e8eaf6; border: 2px dashed #1a237e; transform: scale(1.02); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .drag-handle { cursor: grab; font-size: 1.8rem; color: #95a5a6; padding-right: 5px; user-select: none; transition: 0.2s; display: flex; align-items: center; justify-content: center; width: 30px;}
+        .drag-handle:hover { color: #1a237e; }
+        .drag-handle:active { cursor: grabbing; }
+
+        /* Contenitore Nome e ID */
+        .table-identity { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 140px; flex-shrink: 0; }
+        .table-real-id { font-size: 0.65rem; color: #95a5a6; font-weight: bold; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;}
+        .table-name-input { background: #1a237e; color: white; padding: 0 10px; height: 40px; border-radius: 20px; font-weight: bold; font-size: 1rem; width: 100%; text-align: center; border: 2px solid transparent; outline: none; transition: 0.2s; cursor: pointer; }
+        .table-name-input:focus { border-color: #f1c40f; background: #0f145b; }
+        
+        /* Pillole Giocatori, Punti e SET */
+        .pill { border-radius: 30px; border: 1px solid #ccc; height: 50px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 1.1rem; }
+        .pill-name { flex: 2; padding: 0 15px; }
+        .pill-name input { width: 100%; border: none; background: transparent; text-align: center; font-weight: 600; font-size: 1.2rem; color: #e67e22; outline: none; }
+        .pill-score { flex: 1; border-color: #e67e22; color: #e67e22; font-size: 1.6rem; }
+        
+        .pill-match { flex: 0.7; color: #1a237e; border-color: #1a237e; font-size: 1rem; cursor: pointer; user-select: none; transition: 0.2s; flex-direction: column; }
+        .pill-match:active { transform: scale(0.96); }
+        .set-display { flex-direction: column; align-items: center; justify-content: center; width: 100%; pointer-events: none; }
+        .set-display small { font-size: 0.65rem; color: #7f8c8d; text-transform: uppercase; margin-top: -2px; }
+        
+        .set-edit { flex-direction: column; align-items: center; justify-content: center; width: 100%; }
+        .btn-set-mod { background: #e8eaf6; color: #1a237e; border: 1px solid #1a237e; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; user-select: none; padding: 0; transition: 0.1s; }
+        .btn-set-mod:hover { background: #c5cae9; }
+        .btn-set-ok { background: #27ae60; color: white; border: none; border-radius: 4px; font-size: 0.65rem; padding: 2px 8px; margin-top: 2px; cursor: pointer; font-weight: bold; }
+        .btn-set-ok:hover { background: #219150; }
+        
+        .p2-score { background: #f39c12; color: white; border-color: #f39c12; }
+        .p2-name { background: #f39c12; color: white; border-color: #f39c12; }
+        .p2-name input { color: white; }
+        .p2-match { background: #f39c12; color: white; border-color: #f39c12; }
+        .p2-match .set-display small { color: rgba(255,255,255,0.9); }
+        .p2-match .btn-set-mod { background: white; color: #f39c12; border: none; }
+        .p2-match .btn-set-mod:hover { background: #fdf2e9; }
+
+        .btn-invert { background: #34495e; color: white; border: none; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; cursor: pointer; transition: 0.2s; margin: 0 5px; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .btn-invert:hover { background: #2c3e50; transform: scale(1.1); }
+
+        .action-btns { display: flex; gap: 8px; margin-left: auto; }
+        
+        .btn-reset { background: #95a5a6; color: white; border: none; height: 40px; padding: 0 15px; border-radius: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; font-size: 0.9rem; transition: 0.2s; }
+        .btn-reset:hover { background: #7f8c8d; }
+        
+        .btn-termina { background: #27ae60; color: white; border: none; height: 40px; padding: 0 15px; border-radius: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; font-size: 0.9rem; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.15);}
+        .btn-termina:hover { background: #219150; }
+        
+        .btn-remove { background: white; border: 2px solid #e74c3c; color: #e74c3c; width: 40px; height: 40px; border-radius: 50%; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.2s; user-select: none; -webkit-user-select: none; touch-action: none; }
+        .btn-remove:hover { background: #e74c3c; color: white; }
+
+        /* DESIGN STORICO MATCH CARDS */
+        .history-card { position: relative; background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid #1a237e; cursor: grab; transition: transform 0.1s;}
+        .history-card:active { cursor: grabbing; }
+        .history-card.dragging { opacity: 0.5; transform: scale(0.98); border: 2px dashed #1a237e; }
+        
+        .history-date { font-size: 0.9rem; color: #7f8c8d; margin-bottom: 8px; font-weight: bold;}
+        .history-result { font-size: 1.3rem; font-weight: bold; color: #2c3e50; }
+        .winner { color: #27ae60; }
+        .loser { color: #e74c3c; }
+
+        /* Tasti Storico e Dropdown Sposta in */
+        .history-card-actions { position: absolute; top: 15px; right: 15px; display: flex; align-items: center; gap: 10px; }
+        .btn-history-action { background: none; border: none; font-size: 1.4rem; cursor: pointer; transition: 0.2s; opacity: 0.6; padding: 0;}
+        .btn-history-action:hover { opacity: 1; transform: scale(1.1); }
+        
+        .sposta-in-select { background: #f8f9fa; border: 1px solid #bdc3c7; border-radius: 6px; padding: 4px 8px; font-size: 0.9rem; color: #2c3e50; cursor: pointer; outline: none; transition: 0.2s; font-weight: bold;}
+        .sposta-in-select:hover { border-color: #3498db; }
+
+        .history-logs-toggle { margin-top: 15px; font-size: 0.85rem; color: #1a237e; cursor: pointer; font-weight: bold; display: inline-block; padding: 6px 12px; background: #e8eaf6; border-radius: 6px; transition: 0.2s; user-select: none; }
+        .history-logs-toggle:hover { background: #c5cae9; }
+        
+        .sets-wrapper { display: none; flex-direction: column; gap: 15px; margin-top: 15px; }
+        .set-block { border: 1px solid #cfd8dc; border-radius: 8px; overflow: hidden; background: #f4f6f9; }
+        .set-title { background: #e8eaf6; padding: 10px 15px; font-weight: bold; color: #1a237e; border-bottom: 1px solid #cfd8dc; text-align: center; font-size: 1.1rem; }
+        
+        .history-logs-container { display: flex; gap: 20px; padding: 15px; }
+        .log-col { flex: 1; display: flex; flex-direction: column; }
+        .log-col strong { text-align: center; margin-bottom: 8px; color: #34495e; font-size: 1rem; border-bottom: 2px solid #bdc3c7; padding-bottom: 5px; text-transform: uppercase;}
+        .log-list { max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.95rem; background: white; border-radius: 6px; border: 1px solid #eceff1; padding: 5px; }
+        .log-entry { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid #f1f2f6; }
+        .log-entry:last-child { border-bottom: none; }
+        .tiro-val.plus { color: #27ae60; font-weight: bold; }
+        .tiro-val.minus { color: #e74c3c; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN -->
+    <div id="login-screen">
+        <div class="login-box">
+            <h2 style="margin-bottom: 20px; color: #1a237e;">Direzione Gara</h2>
+            
+            <form id="login-form" onsubmit="eseguiLogin(event)">
+                <input type="email" id="email" class="login-input" placeholder="Email Utente" autocomplete="username" required>
+                
+                <div class="pwd-container">
+                    <input type="password" id="pwd" class="login-input" placeholder="Password" autocomplete="current-password" required>
+                    <span class="pwd-toggle" id="eye-icon" onclick="togglePassword()" title="Mostra/Nascondi password">👁️</span>
+                </div>
+                
+                <div class="remember-container">
+                    <input type="checkbox" id="ricordami">
+                    <label for="ricordami">Ricorda credenziali</label>
+                </div>
+
+                <div id="error-msg" style="color: red; margin: 10px 0; display: none;">Credenziali errate</div>
+                <button type="submit" class="btn-login">ACCEDI</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard-screen">
+        <!-- SIDEBAR -->
+        <nav class="sidebar">
+            <div class="logo-area">
+                <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style="width: 80px; height: auto; display: block; margin: 0 auto 10px auto;">
+                    <path d="m 206.69145,24.412639 h 18 l 15,4 14,7 11,9 8,10 8,16 3,13 3,65.000001 v 27 h 9 l 9,4 8,7 4,10 v 12 l -4,9 -5,6 -9,5 -5,1 h -9 l -1,8 -5,14 -7,13 -11,14 -13,11 -6,4 v 25 l 14,10 56,1 13,4 11,7 7,-18 16,-43 15,-41 10,-27 23,-62 15,-41 13,-35.000001 15,-40 4,-3 9,1 19,7 4,4 v 7 l -13,40 -40,120.000001 -14,43 -32,96 -14,43 -16,48 -1,38 -5,5 h -313 l -5,-5 v -102 l 3,-11 6,-12 9,-10 9,-7 12,-5 5,-1 56,-1 13,-10 h 2 l -1,-25 -13,-9 -12,-12 -9,-14 -6,-14 -3,-10 v -5 h -10 l -9,-3 -9,-8 -4,-8 -1,-11 3,-10 7,-8 8,-5 4,-1 h 9 l -1,-19 -7,-49 1,-13.000001 5,-15 7,-11 7,-8 13,-9 12,-5 17,-3 38,-16 z" fill="#010000"/>
+                    <path d="m 145.69145,148.41264 h 2 l 7,8 12,9 11,5 16,4 77,1 v 48 l -4,17 -8,16 -11,13 -11,9 -16,8 -17,4 h -19 l -14,-3 -12,-5 -12,-7 -13,-13 -9,-14 -5,-13 -2,-10 v -51 l 16,-8 8,-9 z" fill="#f3c99f"/>
+                    <path d="m 204.69145,40.412639 h 21 l 12,4 10,6 8,7 7,11 4,10 1,4 3,61.000001 v 16 h -78 l -13,-4 -12,-7 -7,-7 -7,-10 -5,-14 -2,-15 -4,-3.000001 -7,1.000001 -2,3 -1,37 -4,10 -8,7 -3,1 -1,-1 -7,-49 v -9.000001 l 4,-13 7,-11 9,-8 11,-5 8,-2 12,-2 34,-15 z" fill="#2c2310"/>
+                    <path d="m 425.69145,359.41264 h 13 l 16,4 13,7 12,11 7,10 5,12 2,10 v 16 l -4,15 -6,11 -9,11 -11,8 -13,6 -9,2 h -19 l -14,-4 -13,-7 -9,-8 -9,-13 -5,-12 -2,-10 v -15 l 3,-12 8,-16 9,-10 11,-8 11,-5 z"/>
+                    <path d="m 447.69145,84.412639 5,1 3,1 -1,7 -14,43.000001 -33,99 -14,43 -33,99 -5,16 -3,1 -17,-6 3,-10 15,-41 14,-38 16,-43 17,-46 18,-49 13,-35 15,-40.000001 z" fill="#c29948"/>
+                    <path d="m 75.69145,345.41264 5,1 14,98 v 22 l -1,1 h -46 v -88 l 3,-12 7,-11 11,-8 z" fill="#fdfcfa"/>
+                    <path d="m 163.69145,301.41264 10,2 15,2 h 10 l 15,-2 11,-2 v 33 l -12,14 -18,22 -5,-4 -9,-11 -12,-14 -5,-7 z" fill="#d8b38c"/>
+                    <path d="m 192.69145,392.41264 4,1 24,16 -2,6 -14,26 -10,17 -3,-3 -14,-25 -10,-18 1,-4 15,-10 z" fill="#fdfcfb"/>
+                    <path d="m 145.69145,337.41264 3,1 4,6 12,14 11,14 7,8 -4,4 -27,18 h -2 l -8,-20 -7,-26 -1,-9 z" fill="#fdfcfa"/>
+                    <path d="m 239.69145,337.41264 5,2 10,8 -2,12 -6,21 -7,19 -3,3 -30,-20 v -3 l 11,-14 9,-10 9,-11 z" fill="#fdfcfa"/>
+                    <path d="m 309.48594,345.41264 7,1 8,4 7,6 -1,7 -14,38 -20,54 h -1 v -13 z" fill="#fdfbfa"/>
+                    <path d="m 329.69145,403.41264 7,1 12,4 1,3 -15,45 -1,2 -5,-1 -15,-5 -1,-4 16,-43 z" fill="#c29948"/>
+                    <path d="m 165.69145,244.41264 h 11 l 3,9 5,5 4,2 h 10 l 6,-3 4,-5 3,-8 h 11 l -1,9 -4,8 -4,5 -8,5 -7,2 h -9 l -11,-4 -8,-7 -4,-8 -1,-3 z" fill="#030301"/>
+                    <path d="m 163.69145,321.41264 h 12 l 9,4 7,8 2,5 v 30 l -4,-2 -9,-11 -12,-14 -5,-7 z" fill="#f3c99e"/>
+                    <path d="m 435.69145,398.41264 h 9 l 6,4 4,5 1,8 -3,7 -5,5 -2,1 h -11 l -6,-4 -3,-4 -1,-3 v -8 l 4,-7 4,-3 z" fill="#fdfbf9"/>
+                    <path d="m 144.69145,192.41264 9,1 6,5 2,5 -1,8 -5,6 -4,2 h -7 l -6,-3 -3,-4 -1,-3 v -7 l 3,-5 5,-4 z" fill="#070503"/>
+                    <path d="m 237.69145,192.41264 8,1 6,5 2,4 v 7 l -3,5 -4,4 -3,1 h -7 l -7,-4 -3,-6 v -7 l 4,-6 4,-3 z" fill="#060503"/>
+                    <path d="m 95.69145,190.41264 h 6 v 23 h -8 l -6,-5 -1,-3 v -7 l 3,-5 z" fill="#f0c69a"/>
+                    <path d="m 286.69145,190.41264 9,1 5,5 1,9 -4,6 -4,2 h -7 z" fill="#f0c79b"/>
+                    <path d="m 460.69145,48.412639 6,1 2,2 -7,20 -7,-1 -1,-3 z" fill="#c29948"/>
+                    <path d="m 293.69145,457.41264 5,5 11,4 v 1 h -16 z" fill="#fdfbf9"/>
+                </svg>
+
+                <h2>Direzione Gara</h2>
+                <div id="user-email-display" class="user-email"></div>
+            </div>
+            <div class="nav-menu">
+                <a class="nav-item active" id="menu-biliardi" onclick="cambiaScheda('biliardi')"><span>🕹️</span> Biliardi</a>
+                
+                <div class="nav-item-wrapper" id="menu-storico-wrapper">
+                    <a class="nav-item" id="menu-storico" onclick="cambiaScheda('storico', 'root')"><span>🕒</span> Storico</a>
+                    <button class="btn-add-folder" onclick="creaCartellaStorico()" title="Nuova Cartella">+</button>
+                </div>
+                
+                <div id="sidebar-folders" class="sidebar-folders"></div>
+
+                <!-- MENU CESTINO -->
+                <a class="nav-sub-item" id="nav-folder-trash" onclick="cambiaScheda('storico', 'trash')" style="margin-top: 5px; border-top: 1px solid #e0e0e0;">
+                    <span class="f-icon" style="color: #e74c3c;">🗑️</span>
+                    <span class="f-name">Cestino</span>
+                </a>
+
+                <a class="nav-item" style="margin-top: auto; color: #e74c3c;" onclick="eseguiLogout()"><span>🚪</span> Logout</a>
+            </div>
+        </nav>
+
+        <!-- CONTENUTO DESTRA -->
+        <main class="main-content">
+            
+            <!-- SCHEDA BILIARDI -->
+            <div id="sez-biliardi" class="tab-section active">
+                <div class="header">
+                    <div>
+                        <h1>Gestione Segnapunti</h1>
+                        <p style="color: #7f8c8d; font-size: 0.9rem; margin-top: 5px;">I tuoi biliardi collegati a questo account.</p>
+                        
+                        <!-- DROP DOWN ARCHIVIAZIONE AUTOMATICA -->
+                        <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 0.95rem; font-weight: bold; color: #e67e22;">Archiviazione Automatica:</span>
+                            <select id="global-folder-select" class="sposta-in-select" onchange="impostaCartellaDefault(this.value)" style="border-color: #e67e22; background: #fff;">
+                                <option value="root">Storico Principale</option>
+                            </select>
+                        </div>
+
+                    </div>
+                    <div class="header-btns">
+                        <button class="btn-action-header btn-add" onclick="aggiungiTavolo()">➕ AGGIUNGI BILIARDO</button>
+                    </div>
+                </div>
+                <div id="tables-container">
+                    <p style="text-align: center; color: #7f8c8d; font-size: 1.2rem; margin-top: 50px;">Nessun biliardo collegato.<br>Clicca in alto a destra per aggiungerne uno.</p>
+                </div>
+            </div>
+
+            <!-- SCHEDA STORICO E CESTINO -->
+            <div id="sez-storico" class="tab-section">
+                <div class="header">
+                    <h1 id="storico-main-title">Storico Partite</h1>
+                    <div class="header-btns" id="storico-header-btns">
+                        <button id="btn-download-folder" class="btn-action-header" style="background: #2980b9;" onclick="scaricaCartellaPDF()">📥 SCARICA TUTTI I MATCH (PDF)</button>
+                        <button id="btn-empty-history" class="btn-action-header" style="background: #e74c3c;" onclick="svuotaStorico()">🗑️ SVUOTA STORICO</button>
+                        <button id="btn-empty-trash" class="btn-action-header" style="background: #e74c3c; display: none;" onclick="svuotaCestino()">🗑️ SVUOTA CESTINO</button>
+                    </div>
+                </div>
+                <div id="history-container">
+                    <p style="color: #7f8c8d;">Caricamento storico...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+    // 1. CONFIGURAZIONE FIREBASE
+    const firebaseConfig = { 
+        apiKey: "AIzaSyCKJs9TTf7wUipvOMWG-tgfzVlpIj0kmGk", 
+        authDomain: "billiard-scoreboard-3cbb5.firebaseapp.com", 
+        databaseURL: "https://billiard-scoreboard-3cbb5-default-rtdb.europe-west1.firebasedatabase.app", 
+        projectId: "billiard-scoreboard-3cbb5", 
+        appId: "1:50403982389:web:57c2b0dbe03b4b47dec57c" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database(); 
+    const auth = firebase.auth();
+
+    // VARIABILI GLOBALI (Biliardi)
+    let userId = null; 
+    let mieiTavoli = {}; 
+    let tuttiITavoli = {}; 
+    let matchBuffers = {}; 
+
+    let removeTimer = null;
+    let isDragging = false; 
+    let setEditTimer = null;
+    let editingSet = { matchId: null, player: null };
+    let processingLock = {}; 
+
+    // VARIABILI GLOBALI STORICO E CARTELLE
+    let rawStorico = {};
+    let rawFolders = {};
+    let draggedMatchId = null; 
+    let currentFolderView = 'root'; 
+    let defaultFolderId = 'root'; // Cartella predefinita per l'archiviazione automatica
+
+    // 2. FUNZIONI DI LOGIN 
+    document.addEventListener("DOMContentLoaded", () => {
+        const savedEmail = localStorage.getItem('biliardi_saved_email');
+        if (savedEmail) {
+            document.getElementById('email').value = savedEmail;
+            document.getElementById('ricordami').checked = true;
+        }
+        document.getElementById('tables-container').addEventListener('dragover', handleDragOver);
+    });
+
+    function togglePassword() {
+        const pwdInput = document.getElementById('pwd');
+        const eyeIcon = document.getElementById('eye-icon');
+        if (pwdInput.type === "password") { pwdInput.type = "text"; eyeIcon.innerText = "🙈"; } 
+        else { pwdInput.type = "password"; eyeIcon.innerText = "👁️"; }
+    }
+
+    function eseguiLogin(event) {
+        if (event) event.preventDefault(); 
+        const e = document.getElementById('email').value;
+        const p = document.getElementById('pwd').value;
+        const ricordami = document.getElementById('ricordami').checked;
+
+        if (ricordami) { localStorage.setItem('biliardi_saved_email', e); } 
+        else { localStorage.removeItem('biliardi_saved_email'); }
+
+        const persistence = ricordami ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
+        auth.setPersistence(persistence)
+            .then(() => auth.signInWithEmailAndPassword(e, p))
+            .catch(() => document.getElementById('error-msg').style.display = 'block');
+    }
+
+    function eseguiLogout() { auth.signOut(); }
+
+    auth.onAuthStateChanged(user => {
+        if(user) {
+            userId = user.uid; 
+            document.getElementById('user-email-display').innerText = user.email;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('dashboard-screen').style.display = 'flex';
+            
+            // Ascolto della cartella predefinita globale
+            db.ref('users/' + userId + '/settings/defaultFolder').on('value', snap => {
+                defaultFolderId = snap.val() || 'root';
+                const select = document.getElementById('global-folder-select');
+                if(select) select.value = defaultFolderId;
+            });
+
+            avviaAscoltoDati(); 
+            avviaAscoltoStorico();
+        } else {
+            if(userId) {
+                db.ref('users/' + userId + '/miei_tavoli').off();
+                db.ref('users/' + userId + '/storico').off();
+                db.ref('users/' + userId + '/storico_folders').off();
+                db.ref('users/' + userId + '/match_buffers').off();
+                db.ref('users/' + userId + '/settings/defaultFolder').off();
+                db.ref('matches').off();
+            }
+            userId = null;
+            document.getElementById('user-email-display').innerText = "";
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('dashboard-screen').style.display = 'none';
+        }
+    });
+
+    // CAMBIO SCHEDA E GESTIONE VISTE CARTELLE/CESTINO
+    function cambiaScheda(scheda, folderId = 'root') {
+        document.querySelectorAll('.tab-section').forEach(el => el.classList.remove('active'));
+        document.getElementById('sez-' + scheda).classList.add('active');
+        
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-sub-item').forEach(el => el.classList.remove('active'));
+        
+        if(scheda === 'biliardi') {
+            document.getElementById('menu-biliardi').classList.add('active');
+        } else if (scheda === 'storico') {
+            currentFolderView = folderId;
+            
+            document.getElementById('btn-empty-history').style.display = folderId === 'trash' ? 'none' : 'block';
+            document.getElementById('btn-empty-trash').style.display = folderId === 'trash' ? 'block' : 'none';
+            document.getElementById('btn-download-folder').style.display = folderId === 'trash' ? 'none' : 'block';
+
+            if(folderId === 'root') {
+                document.getElementById('menu-storico').classList.add('active');
+                document.getElementById('storico-main-title').innerText = "Storico Partite";
+            } else if (folderId === 'trash') {
+                document.getElementById('nav-folder-trash').classList.add('active');
+                document.getElementById('storico-main-title').innerText = "Cestino";
+            } else {
+                let folderElem = document.getElementById('nav-folder-' + folderId);
+                if(folderElem) folderElem.classList.add('active');
+                if(rawFolders[folderId]) document.getElementById('storico-main-title').innerText = "Storico - " + rawFolders[folderId].name;
+            }
+            renderStoricoMatches(); 
+        }
+    }
+
+    // --- IMPOSTAZIONE CARTELLA GLOBALE ---
+    function impostaCartellaDefault(folderId) {
+        defaultFolderId = folderId; // Aggiornamento istantaneo locale
+        db.ref('users/' + userId + '/settings/defaultFolder').set(folderId);
+    }
+
+    function updateGlobalFolderSelect() {
+        const select = document.getElementById('global-folder-select');
+        if(!select) return;
+        let options = `<option value="root">Storico Principale</option>`;
+        Object.keys(rawFolders).forEach(fId => {
+            options += `<option value="${fId}">${rawFolders[fId].name}</option>`;
+        });
+        select.innerHTML = options;
+        select.value = defaultFolderId; // Ripristina la selezione salvata
+    }
+
+
+    // 3. RECUPERO DATI E MOTORE LOGICO (BILIARDI)
+    function avviaAscoltoDati() {
+        db.ref('users/' + userId + '/miei_tavoli').off();
+        db.ref('users/' + userId + '/match_buffers').off();
+        db.ref('matches').off();
+
+        db.ref('users/' + userId + '/miei_tavoli').on('value', snapshot => {
+            mieiTavoli = snapshot.val() || {};
+            disegnaTabellone();
+        });
+
+        db.ref('users/' + userId + '/match_buffers').on('value', snapshot => {
+            matchBuffers = snapshot.val() || {};
+        });
+
+        db.ref('matches').on('value', snapshot => {
+            tuttiITavoli = snapshot.val() || {};
+            elaboraStatiPartite(); 
+            disegnaTabellone();
+        });
+    }
+
+    function elaboraStatiPartite() {
+        const tavoliDelMioAccount = Object.keys(mieiTavoli);
+        tavoliDelMioAccount.forEach(matchId => {
+            if (processingLock[matchId]) return;
+
+            const live = tuttiITavoli[matchId] || { n0: 'G1', n1: 'G2', s0: 0, s1: 0, st0: 0, st1: 0, l0: [], l1: [] };
+            let buffer = matchBuffers[matchId];
+
+            if (!buffer) {
+                buffer = {
+                    n0: live.n0, n1: live.n1,
+                    originalN0: live.n0, originalN1: live.n1,
+                    startTime: new Date().toLocaleString('it-IT'),
+                    sets: [],
+                    lastSt0: live.st0 || 0, lastSt1: live.st1 || 0,
+                    maxS0: live.s0 || 0, maxS1: live.s1 || 0,
+                    maxL0: live.l0 || [], maxL1: live.l1 || [],
+                    currentS0: live.s0 || 0, currentS1: live.s1 || 0
+                };
+                db.ref(`users/${userId}/match_buffers/${matchId}`).set(buffer);
+                return;
+            }
+
+            let needsUpdate = false;
+
+            if (live.forceArchive) {
+                processingLock[matchId] = true; 
+                archiviaPartita(matchId, buffer, null);
+                
+                db.ref('matches/' + matchId).update({
+                    s0: 0, s1: 0, st0: 0, st1: 0, l0: null, l1: null, ls0: "0", ls1: "0", n0: "GIOCATORE 1", n1: "GIOCATORE 2", forceArchive: null
+                }).then(() => { setTimeout(() => { delete processingLock[matchId]; }, 2500); }).catch(() => { setTimeout(() => { delete processingLock[matchId]; }, 2500); });
+                return;
+            }
+
+            if (live.n0 === buffer.n1 && live.n1 === buffer.n0 && live.n0 !== live.n1) {
+                buffer.originalN0 = live.n0; buffer.originalN1 = live.n1; needsUpdate = true;
+            }
+
+            const bothNamesChanged = (live.n0 !== buffer.originalN0 && live.n1 !== buffer.originalN1);
+            const isResettingToDefault = (live.n0 === 'GIOCATORE 1' && live.n1 === 'GIOCATORE 2');
+
+            if (bothNamesChanged && !isResettingToDefault) {
+                processingLock[matchId] = true; 
+                archiviaPartita(matchId, buffer, live);
+                setTimeout(() => { delete processingLock[matchId]; }, 2500); 
+                return; 
+            }
+
+            if (buffer.n0 !== live.n0 || buffer.n1 !== live.n1) { buffer.n0 = live.n0; buffer.n1 = live.n1; needsUpdate = true; }
+
+            if (live.st0 > buffer.lastSt0 || live.st1 > buffer.lastSt1) {
+                if (!buffer.sets) buffer.sets = [];
+                buffer.sets.push({ s0: buffer.maxS0 || 0, s1: buffer.maxS1 || 0, l0: buffer.maxL0 || [], l1: buffer.maxL1 || [] });
+                buffer.lastSt0 = live.st0; buffer.lastSt1 = live.st1;
+                buffer.maxS0 = live.s0; buffer.maxS1 = live.s1;
+                buffer.maxL0 = live.l0 || []; buffer.maxL1 = live.l1 || [];
+                needsUpdate = true;
+            } else if (live.st0 < buffer.lastSt0 || live.st1 < buffer.lastSt1) {
+                buffer.lastSt0 = live.st0; buffer.lastSt1 = live.st1; needsUpdate = true;
+            }
+
+            if (live.s0 !== buffer.currentS0 || live.s1 !== buffer.currentS1 || live.l0?.length !== (buffer.maxL0?.length || 0) || live.l1?.length !== (buffer.maxL1?.length || 0)) {
+                if (live.s0 > 0 || live.l0?.length > 0) { buffer.maxS0 = live.s0; buffer.maxL0 = live.l0 || []; }
+                if (live.s1 > 0 || live.l1?.length > 0) { buffer.maxS1 = live.s1; buffer.maxL1 = live.l1 || []; }
+                buffer.currentS0 = live.s0; buffer.currentS1 = live.s1;
+                needsUpdate = true;
+            }
+
+            if (needsUpdate) { db.ref(`users/${userId}/match_buffers/${matchId}`).set(buffer); }
+        });
+    }
+
+    function archiviaPartita(matchId, buffer, liveState = null) {
+        let finalSets = buffer.sets ? [...buffer.sets] : [];
+        if (buffer.maxS0 > 0 || buffer.maxS1 > 0 || buffer.maxL0?.length > 0 || buffer.maxL1?.length > 0) {
+            finalSets.push({ s0: buffer.maxS0, s1: buffer.maxS1, l0: buffer.maxL0 || [], l1: buffer.maxL1 || [] });
+        }
+
+        let hasPoints = false;
+        if (finalSets.length > 0) { hasPoints = finalSets.some(s => s.s0 > 0 || s.s1 > 0 || (s.l0 && s.l0.length > 0) || (s.l1 && s.l1.length > 0)); }
+
+        if (hasPoints) {
+            const nomeTavoloVisualizzato = mieiTavoli[matchId]?.nome || matchId;
+            const datiStorico = {
+                idTavolo: String(nomeTavoloVisualizzato), data: buffer.startTime,
+                nome1: buffer.n0, set1: buffer.lastSt0, nome2: buffer.n1, set2: buffer.lastSt1,
+                setsDettaglio: finalSets, 
+                folderId: defaultFolderId // <--- LA PARTITA FINISCE SEMPRE E SOLO NELLA CARTELLA PRESELEZIONATA GLOBALE
+            };
+            
+            let cleanTime = buffer.startTime.replace(/[^a-zA-Z0-9]/g, '');
+            let uniqueKey = "MATCH_" + matchId + "_" + cleanTime;
+            db.ref('users/' + userId + '/storico/' + uniqueKey).set(datiStorico);
+        }
+
+        delete matchBuffers[matchId];
+
+        if (liveState) {
+            const newBuffer = {
+                n0: liveState.n0, n1: liveState.n1, originalN0: liveState.n0, originalN1: liveState.n1,
+                startTime: new Date().toLocaleString('it-IT'), sets: [],
+                lastSt0: liveState.st0 || 0, lastSt1: liveState.st1 || 0,
+                maxS0: liveState.s0 || 0, maxS1: liveState.s1 || 0,
+                maxL0: liveState.l0 || [], maxL1: liveState.l1 || [],
+                currentS0: liveState.s0 || 0, currentS1: liveState.s1 || 0
+            };
+            db.ref(`users/${userId}/match_buffers/${matchId}`).set(newBuffer);
+        } else {
+            db.ref(`users/${userId}/match_buffers/${matchId}`).remove();
+        }
+    }
+
+    function startSetEditTimer(matchId, player) {
+        if (editingSet.matchId === matchId && editingSet.player === player) return;
+        setEditTimer = setTimeout(() => { editingSet = { matchId, player }; disegnaTabellone(); }, 3000);
+    }
+    function cancelSetEditTimer() { if (setEditTimer) { clearTimeout(setEditTimer); setEditTimer = null; } }
+    function closeSetEdit() { editingSet = { matchId: null, player: null }; disegnaTabellone(); }
+    function modificaSetDashboard(matchId, player, delta) {
+        const data = tuttiITavoli[matchId]; if (!data) return;
+        const key = player === 0 ? 'st0' : 'st1';
+        let val = parseInt(data[key]) || 0;
+        val += delta; if (val < 0) val = 0;
+        db.ref('matches/' + matchId).update({ [key]: val });
+    }
+
+    // 4. AGGIORNAMENTO GRAFICO BILIARDI
+    function disegnaTabellone() {
+        if (isDragging) return; 
+
+        const container = document.getElementById('tables-container');
+        const tavoliDelMioAccount = Object.keys(mieiTavoli).sort((a, b) => {
+            let ordA = mieiTavoli[a].ordine || 0; let ordB = mieiTavoli[b].ordine || 0; return ordA - ordB;
+        });
+
+        if(tavoliDelMioAccount.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: #7f8c8d; font-size: 1.2rem; margin-top: 50px;">Nessun biliardo collegato.<br>Clicca in alto a destra per aggiungerne uno.</p>'; return;
+        }
+
+        const msg = container.querySelector('p'); if (msg) msg.remove();
+
+        Array.from(container.children).forEach(row => { const rowId = row.id.replace('row-', ''); if (!mieiTavoli[rowId]) { row.remove(); } });
+
+        tavoliDelMioAccount.forEach((matchId, index) => {
+            const dati = tuttiITavoli[matchId] || { n0: 'G1', n1: 'G2', s0: 0, s1: 0, st0: 0, st1: 0 };
+            const nomeDaMostrare = mieiTavoli[matchId].nome || matchId;
+
+            const isEditG1 = (editingSet.matchId === matchId && editingSet.player === 0);
+            const isEditG2 = (editingSet.matchId === matchId && editingSet.player === 1);
+            const disp0 = isEditG1 ? 'none' : 'flex'; const edit0 = isEditG1 ? 'flex' : 'none';
+            const disp1 = isEditG2 ? 'none' : 'flex'; const edit1 = isEditG2 ? 'flex' : 'none';
+
+            let row = document.getElementById(`row-${matchId}`);
+            if (!row) {
+                row = document.createElement('div'); row.className = 'table-row'; row.id = `row-${matchId}`; row.draggable = true; 
+                row.addEventListener('dragstart', (e) => handleDragStart(e, matchId));
+                row.addEventListener('dragend', handleDragEnd);
+
+                row.innerHTML = `
+                    <div class="drag-handle" title="Trascina per riordinare">☰</div>
+                    <div class="table-identity">
+                        <div class="table-real-id">ID: ${matchId}</div>
+                        <input type="text" class="table-name-input" id="tname-${matchId}" title="Scrivi qui il nome e premi Invio" value="${nomeDaMostrare}" onchange="salvaNomeEstetico('${matchId}', this.value)" onkeyup="if(event.key === 'Enter') this.blur();">
+                    </div>
+                    
+                    <div class="pill pill-name"><input type="text" id="n0-${matchId}" value="${dati.n0 || 'G1'}" onchange="aggiornaDatoTablet('${matchId}', 'n0', this.value)" onkeyup="if(event.key === 'Enter') this.blur();"></div>
+                    
+                    <div class="pill pill-match" title="Tieni premuto 3 sec per modificare" onpointerdown="startSetEditTimer('${matchId}', 0)" onpointerup="cancelSetEditTimer()" onpointerleave="cancelSetEditTimer()">
+                        <div class="set-display" id="set-display-0-${matchId}" style="display:${disp0};"><div id="st0-${matchId}" style="font-weight:bold; font-size:1.3rem;">${dati.st0 || 0}</div><small>Set</small></div>
+                        <div class="set-edit" id="set-edit-0-${matchId}" style="display:${edit0};">
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <button class="btn-set-mod" onpointerdown="modificaSetDashboard('${matchId}', 0, -1); event.stopPropagation();">-</button>
+                                <div id="st-edit-val-0-${matchId}" style="font-weight:bold; font-size:1.2rem;">${dati.st0 || 0}</div>
+                                <button class="btn-set-mod" onpointerdown="modificaSetDashboard('${matchId}', 0, 1); event.stopPropagation();">+</button>
+                            </div>
+                            <button class="btn-set-ok" onpointerdown="closeSetEdit(); event.stopPropagation();">OK</button>
+                        </div>
+                    </div>
+
+                    <div class="pill pill-score" id="s0-${matchId}">${dati.s0 || 0}</div>
+                    <button class="btn-invert" title="Inverti Giocatori" onclick="invertiGiocatoriDashboard('${matchId}')">⇄</button>
+                    <div class="pill pill-score p2-score" id="s1-${matchId}">${dati.s1 || 0}</div>
+                    
+                    <div class="pill pill-match p2-match" title="Tieni premuto 3 sec per modificare" onpointerdown="startSetEditTimer('${matchId}', 1)" onpointerup="cancelSetEditTimer()" onpointerleave="cancelSetEditTimer()">
+                        <div class="set-display" id="set-display-1-${matchId}" style="display:${disp1};"><div id="st1-${matchId}" style="font-weight:bold; font-size:1.3rem;">${dati.st1 || 0}</div><small>Set</small></div>
+                        <div class="set-edit" id="set-edit-1-${matchId}" style="display:${edit1};">
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <button class="btn-set-mod" onpointerdown="modificaSetDashboard('${matchId}', 1, -1); event.stopPropagation();">-</button>
+                                <div id="st-edit-val-1-${matchId}" style="font-weight:bold; font-size:1.2rem;">${dati.st1 || 0}</div>
+                                <button class="btn-set-mod" onpointerdown="modificaSetDashboard('${matchId}', 1, 1); event.stopPropagation();">+</button>
+                            </div>
+                            <button class="btn-set-ok" onpointerdown="closeSetEdit(); event.stopPropagation();">OK</button>
+                        </div>
+                    </div>
+
+                    <div class="pill pill-name p2-name"><input type="text" id="n1-${matchId}" value="${dati.n1 || 'G2'}" onchange="aggiornaDatoTablet('${matchId}', 'n1', this.value)" onkeyup="if(event.key === 'Enter') this.blur();"></div>
+
+                    <div class="action-btns">
+                        <button class="btn-reset" title="Azzera i punteggi attuali senza archiviare" onclick="azzeraTavoloSolo('${matchId}')">🔄 AZZERA</button>
+                        <button class="btn-termina" title="Chiudi incontro e archivia nello storico" onclick="terminaESalvaTavolo('${matchId}')">💾 TERMINA E SALVA NELLO STORICO</button>
+                        <button class="btn-remove" title="Tieni premuto 5 sec per rimuovere il tavolo" onpointerdown="startRemoveTimer('${matchId}')" onpointerup="cancelRemoveTimer()" onpointerleave="cancelRemoveTimer()">🗑️</button>
+                    </div>
+                `;
+                container.appendChild(row);
+            } else {
+                let inputNomeTavolo = document.getElementById(`tname-${matchId}`); if (document.activeElement !== inputNomeTavolo) inputNomeTavolo.value = nomeDaMostrare;
+                let inputG1 = document.getElementById(`n0-${matchId}`); if (document.activeElement !== inputG1) inputG1.value = dati.n0 || 'G1';
+                let inputG2 = document.getElementById(`n1-${matchId}`); if (document.activeElement !== inputG2) inputG2.value = dati.n1 || 'G2';
+
+                document.getElementById(`s0-${matchId}`).innerText = dati.s0 || 0; document.getElementById(`s1-${matchId}`).innerText = dati.s1 || 0;
+                
+                document.getElementById(`st0-${matchId}`).innerText = dati.st0 || 0; document.getElementById(`st-edit-val-0-${matchId}`).innerText = dati.st0 || 0;
+                if (isEditG1) { document.getElementById(`set-display-0-${matchId}`).style.display = 'none'; document.getElementById(`set-edit-0-${matchId}`).style.display = 'flex'; } 
+                else { document.getElementById(`set-display-0-${matchId}`).style.display = 'flex'; document.getElementById(`set-edit-0-${matchId}`).style.display = 'none'; }
+
+                document.getElementById(`st1-${matchId}`).innerText = dati.st1 || 0; document.getElementById(`st-edit-val-1-${matchId}`).innerText = dati.st1 || 0;
+                if (isEditG2) { document.getElementById(`set-display-1-${matchId}`).style.display = 'none'; document.getElementById(`set-edit-1-${matchId}`).style.display = 'flex'; } 
+                else { document.getElementById(`set-display-1-${matchId}`).style.display = 'flex'; document.getElementById(`set-edit-1-${matchId}`).style.display = 'none'; }
+            }
+            if (container.children[index] !== row) { container.insertBefore(row, container.children[index]); }
+        });
+    }
+
+    function invertiGiocatoriDashboard(matchId) {
+        const data = tuttiITavoli[matchId]; if (!data) return;
+        db.ref('matches/' + matchId).update({
+            n0: data.n1 || "GIOCATORE 2", n1: data.n0 || "GIOCATORE 1",
+            s0: data.s1 || 0, s1: data.s0 || 0, st0: data.st1 || 0, st1: data.st0 || 0,
+            l0: data.l1 || [], l1: data.l0 || [], ls0: data.ls1 || "0", ls1: data.ls0 || "0"
+        });
+    }
+    
+    function handleDragStart(e, matchId) { isDragging = true; e.target.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
+    function handleDragEnd(e) { e.target.classList.remove('dragging'); salvaNuovoOrdine(); setTimeout(() => { isDragging = false; disegnaTabellone(); }, 100); }
+    function handleDragOver(e) { e.preventDefault(); const container = document.getElementById('tables-container'); const draggingRow = document.querySelector('.table-row.dragging'); if (!draggingRow) return; const afterElement = getDragAfterElement(container, e.clientY); if (afterElement == null) { container.appendChild(draggingRow); } else { container.insertBefore(draggingRow, afterElement); } }
+    function getDragAfterElement(container, y) { const draggableElements = [...container.querySelectorAll('.table-row:not(.dragging)')]; return draggableElements.reduce((closest, child) => { const box = child.getBoundingClientRect(); const offset = y - box.top - box.height / 2; if (offset < 0 && offset > closest.offset) { return { offset: offset, element: child }; } else { return closest; } }, { offset: Number.NEGATIVE_INFINITY }).element; }
+    function salvaNuovoOrdine() { const container = document.getElementById('tables-container'); const rows = container.querySelectorAll('.table-row'); let updates = {}; rows.forEach((row, index) => { let id = row.id.replace('row-', ''); updates[id + '/ordine'] = index; }); db.ref('users/' + userId + '/miei_tavoli').update(updates); }
+
+
+    // 5. GENERAZIONE STORICO AD ALBERO E CESTINO
+    function avviaAscoltoStorico() {
+        db.ref('users/' + userId + '/storico').off();
+        db.ref('users/' + userId + '/storico_folders').off();
+
+        db.ref('users/' + userId + '/storico_folders').on('value', snap => {
+            rawFolders = snap.val() || {};
+            updateGlobalFolderSelect(); 
+            renderSidebarFolders();
+            renderStoricoMatches();
+        });
+
+        db.ref('users/' + userId + '/storico').on('value', snap => {
+            rawStorico = snap.val() || {};
+            renderSidebarFolders();
+            renderStoricoMatches();
+        });
+    }
+
+    function renderSidebarFolders() {
+        const sidebarContainer = document.getElementById('sidebar-folders');
+        sidebarContainer.innerHTML = '';
+        
+        const menuStoricoWrap = document.getElementById('menu-storico-wrapper');
+        attachDropEventsToSidebarItem(menuStoricoWrap, 'root');
+
+        const menuTrashWrap = document.getElementById('nav-folder-trash');
+        if(menuTrashWrap) attachDropEventsToSidebarItem(menuTrashWrap, 'trash');
+
+        if(currentFolderView !== 'root' && currentFolderView !== 'trash' && !rawFolders[currentFolderView]) {
+            currentFolderView = 'root';
+            cambiaScheda('storico', 'root');
+        }
+
+        Object.keys(rawFolders).forEach(fId => {
+            const f = rawFolders[fId];
+            const a = document.createElement('a');
+            a.className = 'nav-sub-item';
+            a.id = 'nav-folder-' + fId;
+            if(currentFolderView === fId) a.classList.add('active');
+            
+            a.onclick = () => cambiaScheda('storico', fId);
+            
+            a.innerHTML = `
+                <span class="f-icon">📁</span>
+                <span class="f-name" title="${f.name.replace(/"/g, '&quot;')}">${f.name}</span>
+                <div class="folder-actions-side">
+                    <button class="btn-side-action" style="color:#f39c12" title="Rinomina" onclick="event.stopPropagation(); rinominaCartella('${fId}', '${f.name.replace(/'/g, "\\'")}')">✏️</button>
+                    <button class="btn-side-action" style="color:#e74c3c" title="Elimina e sposta partite nel Cestino" onclick="event.stopPropagation(); eliminaCartella('${fId}')">🗑️</button>
+                </div>
+            `;
+            
+            attachDropEventsToSidebarItem(a, fId);
+            sidebarContainer.appendChild(a);
+        });
+    }
+
+    function attachDropEventsToSidebarItem(element, targetFolderId) {
+        element.ondragover = (e) => { e.preventDefault(); element.classList.add('drag-over'); };
+        element.ondragleave = (e) => { element.classList.remove('drag-over'); };
+        element.ondrop = (e) => {
+            e.preventDefault();
+            element.classList.remove('drag-over');
+            if (draggedMatchId) {
+                db.ref('users/' + userId + '/storico/' + draggedMatchId).update({ folderId: targetFolderId });
+            }
+        };
+    }
+
+    function processMatchesUnici(storicoRaw) {
+        const partiteRaw = Object.entries(storicoRaw).map(([key, value]) => ({ key, ...value }));
+        const partiteUniche = [];
+        const firmeViste = new Set();
+
+        partiteRaw.forEach(p => {
+            let firma = p.idTavolo + "_" + p.data;
+            if (!firmeViste.has(firma)) { firmeViste.add(firma); partiteUniche.push(p); } 
+            else { db.ref('users/' + userId + '/storico/' + p.key).remove(); }
+        });
+
+        partiteUniche.sort((a, b) => {
+            let da = a.data ? a.data.split(', ')[0].split('/').reverse().join('') + a.data.split(', ')[1] : '';
+            let dbDate = b.data ? b.data.split(', ')[0].split('/').reverse().join('') + b.data.split(', ')[1] : '';
+            return dbDate.localeCompare(da);
+        });
+        return partiteUniche;
+    }
+
+    function renderStoricoMatches() {
+        const container = document.getElementById('history-container');
+        container.innerHTML = '';
+
+        const partiteUniche = processMatchesUnici(rawStorico);
+        
+        let partiteDaMostrare = partiteUniche.filter(p => {
+            const fId = p.folderId || 'root';
+            return fId === currentFolderView;
+        });
+
+        if(partiteDaMostrare.length === 0) {
+            container.innerHTML = '<p style="color: #7f8c8d; text-align:center; margin-top:30px;">Nessuna partita in questa cartella.</p>';
+            return;
+        }
+
+        partiteDaMostrare.forEach(p => {
+            container.appendChild(createMatchCard(p));
+        });
+    }
+
+    function spostaPartita(chiavePartita, targetFolderId) {
+        if (!targetFolderId) return;
+        db.ref('users/' + userId + '/storico/' + chiavePartita).update({ folderId: targetFolderId });
+    }
+
+    function createMatchCard(partita) {
+        let st1 = Number(partita.set1) || 0; let st2 = Number(partita.set2) || 0;
+        let pt1 = 0; let pt2 = 0;
+
+        if (partita.setsDettaglio && partita.setsDettaglio.length > 0) {
+            let ultimoSet = partita.setsDettaglio[partita.setsDettaglio.length - 1];
+            pt1 = Number(ultimoSet.s0) || 0; pt2 = Number(ultimoSet.s1) || 0;
+        }
+
+        let isG1Winner = st1 > st2; let isG2Winner = st2 > st1;
+        if (st1 === st2) { if (pt1 > pt2) isG1Winner = true; else if (pt2 > pt1) isG2Winner = true; }
+
+        let risultatoHTML = '';
+        if (isG1Winner) risultatoHTML = `<span class="winner">${partita.nome1} (${pt1})</span> vs <span class="loser">${partita.nome2} (${pt2})</span>`;
+        else if (isG2Winner) risultatoHTML = `<span class="loser">${partita.nome1} (${pt1})</span> vs <span class="winner">${partita.nome2} (${pt2})</span>`;
+        else risultatoHTML = `Pareggio: ${partita.nome1} (${pt1}) vs ${partita.nome2} (${pt2})`;
+
+        let setsHTML = '';
+        if (partita.setsDettaglio && partita.setsDettaglio.length > 0) {
+            partita.setsDettaglio.forEach((set, index) => {
+                let arrLog1 = set.l0 ? (Array.isArray(set.l0) ? set.l0 : Object.values(set.l0)) : [];
+                let arrLog2 = set.l1 ? (Array.isArray(set.l1) ? set.l1 : Object.values(set.l1)) : [];
+                
+                const log1HTML = arrLog1.length > 0 ? arrLog1.join('') : '<div style="text-align:center; color:#bdc3c7; padding: 10px; font-style:italic;">Nessun tiro</div>';
+                const log2HTML = arrLog2.length > 0 ? arrLog2.join('') : '<div style="text-align:center; color:#bdc3c7; padding: 10px; font-style:italic;">Nessun tiro</div>';
+
+                setsHTML += `
+                    <div class="set-block">
+                        <div class="set-title">SET ${index + 1} &nbsp;|&nbsp; Punteggio finale: ${set.s0} a ${set.s1}</div>
+                        <div class="history-logs-container">
+                            <div class="log-col"><strong>${partita.nome1}</strong><div class="log-list">${log1HTML}</div></div>
+                            <div class="log-col"><strong style="color: #f39c12;">${partita.nome2}</strong><div class="log-list">${log2HTML}</div></div>
+                        </div>
+                    </div>`;
+            });
+        } else { setsHTML = '<div style="padding:10px; color:#7f8c8d; text-align:center;">Nessun punto registrato in questa partita.</div>'; }
+
+        const card = document.createElement('div');
+        card.className = 'history-card';
+        card.draggable = true;
+
+        card.ondragstart = (e) => { 
+            draggedMatchId = partita.key; 
+            e.dataTransfer.effectAllowed = 'move';
+            card.classList.add('dragging'); 
+        };
+        card.ondragend = (e) => { 
+            draggedMatchId = null; 
+            card.classList.remove('dragging'); 
+        };
+
+        let azioniHTML = '';
+        if (partita.folderId === 'trash') {
+            azioniHTML = `
+                <button class="btn-history-action" style="color: #2980b9;" title="Scarica PDF di questa partita" onclick="generaUnicoPDF('${partita.key}')">📥</button>
+                <button class="btn-history-action" style="color: #27ae60;" title="Recupera nello Storico" onclick="recuperaDaCestino('${partita.key}')">♻️</button>
+                <button class="btn-history-action" style="color: #e74c3c;" title="Elimina Definitivamente" onclick="eliminaPartitaStorico('${partita.key}')">❌</button>
+            `;
+        } else {
+            let options = `<option value="" disabled selected>Sposta in...</option>`;
+            options += `<option value="root">Storico Principale</option>`;
+            Object.keys(rawFolders).forEach(fId => {
+                options += `<option value="${fId}">${rawFolders[fId].name}</option>`;
+            });
+            let spostaInHTML = `
+                <select class="sposta-in-select" onchange="spostaPartita('${partita.key}', this.value)" title="Sposta in un'altra cartella">
+                    ${options}
+                </select>
+            `;
+            azioniHTML = `
+                <button class="btn-history-action" style="color: #2980b9;" title="Scarica PDF di questa partita" onclick="generaUnicoPDF('${partita.key}')">📥</button>
+                ${spostaInHTML}
+                <button class="btn-history-action" style="color: #3498db;" title="Ripristina partita sul tavolo originale" onclick="ripristinaPartitaStorico('${partita.key}')">↩️</button>
+                <button class="btn-history-action" style="color: #e74c3c;" title="Sposta nel Cestino" onclick="eliminaPartitaStorico('${partita.key}')">🗑️</button>
+            `;
+        }
+
+        card.innerHTML = `
+            <div class="history-card-actions">
+                ${azioniHTML}
+            </div>
+            <div class="history-date">${partita.data} | ${partita.idTavolo}</div>
+            <div class="history-result">${risultatoHTML}</div>
+            <div style="font-size: 0.95rem; color: #7f8c8d; margin-top: 5px; font-weight: bold;">Set Vinti: ${st1} a ${st2}</div>
+            
+            <div class="history-logs-toggle" onclick="const c = this.nextElementSibling; c.style.display = c.style.display === 'none' ? 'flex' : 'none';">📜 Mostra Dettagli dei Set e Cronologia</div>
+            <div class="sets-wrapper" style="display: none;">
+                ${setsHTML}
+            </div>
+        `;
+        return card;
+    }
+
+    // --- GESTIONE CARTELLE E CESTINO DB ---
+    function creaCartellaStorico() {
+        const nome = prompt("Nome della nuova cartella:");
+        if(nome && nome.trim() !== '') {
+            const newRef = db.ref('users/' + userId + '/storico_folders').push();
+            newRef.set({ name: nome.trim() });
+        }
+    }
+
+    function rinominaCartella(folderId, oldName) {
+        const nuovoNome = prompt("Rinomina la cartella:", oldName);
+        if(nuovoNome && nuovoNome.trim() !== '' && nuovoNome !== oldName) {
+            db.ref('users/' + userId + '/storico_folders/' + folderId).update({ name: nuovoNome.trim() });
+        }
+    }
+
+    function eliminaCartella(folderId) {
+        if(confirm("Vuoi eliminare questa cartella?\nNOTA: Tutte le partite contenute al suo interno verranno spostate nel Cestino.")) {
+            let matchUpdates = {};
+            Object.keys(rawStorico).forEach(k => {
+                if(rawStorico[k].folderId === folderId) { matchUpdates[k + '/folderId'] = 'trash'; }
+            });
+            if(Object.keys(matchUpdates).length > 0) db.ref('users/' + userId + '/storico').update(matchUpdates);
+            db.ref('users/' + userId + '/storico_folders/' + folderId).remove();
+            
+            if (defaultFolderId === folderId) {
+                db.ref('users/' + userId + '/settings/defaultFolder').set('root');
+            }
+        }
+    }
+
+    function svuotaCestino() {
+        if(confirm("Sei sicuro di voler SVUOTARE IL CESTINO?\nTutte le partite al suo interno verranno ELIMINATE IN MODO PERMANENTE e irreversibile.")) {
+            let updates = {};
+            Object.keys(rawStorico).forEach(k => {
+                if(rawStorico[k].folderId === 'trash') { updates[k] = null; }
+            });
+            if(Object.keys(updates).length > 0) db.ref('users/' + userId + '/storico').update(updates);
+        }
+    }
+
+    function recuperaDaCestino(chiavePartita) {
+        db.ref('users/' + userId + '/storico/' + chiavePartita).update({ folderId: 'root' });
+    }
+
+    function eliminaPartitaStorico(chiavePartita) {
+        const p = rawStorico[chiavePartita];
+        if (p && p.folderId === 'trash') {
+            if(confirm("Sei sicuro di voler eliminare DEFINITIVAMENTE questa partita?")) { 
+                db.ref('users/' + userId + '/storico/' + chiavePartita).remove(); 
+            }
+        } else {
+            if(confirm("Spostare questa partita nel Cestino?")) { 
+                db.ref('users/' + userId + '/storico/' + chiavePartita).update({ folderId: 'trash' }); 
+            }
+        }
+    }
+
+    // --- FUNZIONE DI RIPRISTINO SUL TAVOLO ---
+    function ripristinaPartitaStorico(chiavePartita) {
+        if(!confirm("Vuoi RIPRISTINARE questa partita sul suo biliardo originale?\nI dati attualmente in corso sul tavolo verranno sovrascritti.")) return;
+
+        db.ref('users/' + userId + '/storico/' + chiavePartita).once('value').then(snap => {
+            const partita = snap.val();
+            if(!partita) return;
+
+            let matchId = chiavePartita.substring(6, chiavePartita.lastIndexOf('_'));
+            if(!matchId) { alert("Impossibile determinare il tavolo originale per questa partita."); return; }
+
+            let st0 = Number(partita.set1) || 0; let st1 = Number(partita.set2) || 0;
+            let s0 = 0, s1 = 0, l0 = [], l1 = [];
+
+            if (partita.setsDettaglio && partita.setsDettaglio.length > 0) {
+                let ultimoSet = partita.setsDettaglio[partita.setsDettaglio.length - 1];
+                s0 = Number(ultimoSet.s0) || 0; s1 = Number(ultimoSet.s1) || 0;
+                l0 = ultimoSet.l0 || []; l1 = ultimoSet.l1 || [];
+                
+                if (s0 > s1 && st0 > 0) st0--; else if (s1 > s0 && st1 > 0) st1--;
+            }
+
+            const updates = {
+                n0: partita.nome1 || "GIOCATORE 1", n1: partita.nome2 || "GIOCATORE 2",
+                s0: s0, s1: s1, st0: st0, st1: st1, l0: l0, l1: l1, ls0: "0", ls1: "0", forceArchive: null
+            };
+
+            db.ref('users/' + userId + '/miei_tavoli/' + matchId).once('value').then(tSnap => {
+                if (!tSnap.exists()) {
+                    let numTavoli = Object.keys(mieiTavoli).length;
+                    db.ref('users/' + userId + '/miei_tavoli/' + matchId).set({ nome: partita.idTavolo || matchId, ordine: numTavoli });
+                }
+            });
+
+            db.ref(`users/${userId}/match_buffers/${matchId}`).remove();
+            db.ref('matches/' + matchId).update(updates).then(() => {
+                if(confirm("Partita ripristinata sul tavolo!\nVuoi eliminarla dallo storico per evitare doppioni?")) {
+                    db.ref('users/' + userId + '/storico/' + chiavePartita).remove();
+                }
+                cambiaScheda('biliardi');
+            });
+        });
+    }
+
+    // 6. AZIONI DIREZIONE GARA (Gestione Tavoli)
+    function aggiungiTavolo() {
+        let nuovoID = prompt("Inserisci l'ID esatto di connessione del tablet (es. TAVOLO-1234):", "TAVOLO-");
+        if(nuovoID && nuovoID.trim() !== "") {
+            let idSalvato = nuovoID.trim();
+            let numTavoli = Object.keys(mieiTavoli).length;
+            db.ref('users/' + userId + '/miei_tavoli/' + idSalvato).set({ nome: idSalvato, ordine: numTavoli });
+        }
+    }
+
+    function salvaNomeEstetico(matchId, nuovoNome) {
+        let nomeFinale = (nuovoNome && nuovoNome.trim() !== '') ? nuovoNome.trim() : matchId;
+        db.ref('users/' + userId + '/miei_tavoli/' + matchId).update({ nome: nomeFinale });
+    }
+
+    function aggiornaDatoTablet(matchId, chiave, valore) {
+        let aggiornamento = {}; aggiornamento[chiave] = valore;
+        db.ref('matches/' + matchId).update(aggiornamento);
+    }
+
+    function azzeraTavoloSolo(matchId) {
+        if(confirm(`Sei sicuro di voler AZZERARE i punti in corso SENZA SALVARE?`)) {
+            if (processingLock[matchId]) return; processingLock[matchId] = true;
+            delete matchBuffers[matchId];
+            db.ref(`users/${userId}/match_buffers/${matchId}`).remove();
+            db.ref('matches/' + matchId).update({ s0: 0, s1: 0, st0: 0, st1: 0, l0: null, l1: null, ls0: "0", ls1: "0", forceArchive: null }).then(() => { setTimeout(() => { delete processingLock[matchId]; }, 2500); });
+        }
+    }
+
+    function terminaESalvaTavolo(matchId) {
+        if(confirm(`Sei sicuro di voler TERMINARE la partita e salvarla nello Storico?`)) {
+            if (processingLock[matchId]) return; processingLock[matchId] = true;
+
+            const buffer = matchBuffers[matchId];
+            const live = tuttiITavoli[matchId];
+            
+            if (buffer && live) { 
+                let cS0 = parseInt(live.s0) || 0; let cS1 = parseInt(live.s1) || 0;
+                if (cS0 > cS1) { buffer.lastSt0 = (parseInt(buffer.lastSt0) || parseInt(live.st0) || 0) + 1; } 
+                else if (cS1 > cS0) { buffer.lastSt1 = (parseInt(buffer.lastSt1) || parseInt(live.st1) || 0) + 1; }
+                buffer.maxS0 = cS0; buffer.maxS1 = cS1; buffer.maxL0 = live.l0 || []; buffer.maxL1 = live.l1 || [];
+                archiviaPartita(matchId, buffer); 
+            }
+            
+            db.ref('matches/' + matchId).update({ s0: 0, s1: 0, st0: 0, st1: 0, l0: null, l1: null, ls0: "0", ls1: "0", n0: "GIOCATORE 1", n1: "GIOCATORE 2", forceArchive: null }).then(() => { setTimeout(() => { delete processingLock[matchId]; }, 2500); });
+        }
+    }
+
+    function startRemoveTimer(matchId) { removeTimer = setTimeout(() => { rimuoviTavolo(matchId); }, 5000); }
+    function cancelRemoveTimer() { if (removeTimer) { clearTimeout(removeTimer); removeTimer = null; } }
+
+    function rimuoviTavolo(matchId) {
+        if(confirm(`Hai tenuto premuto per 5 secondi.\nVuoi davvero SCOLLEGARE questo tavolo dal tuo account?`)) { db.ref('users/' + userId + '/miei_tavoli/' + matchId).remove(); }
+    }
+
+    function svuotaStorico() {
+        if(confirm("ATTENZIONE: Sei sicuro di voler eliminare TUTTE le TUE partite archiviate e le tue CARTELLE?")) {
+            if(confirm("Sei assolutamente sicuro? Questa azione è irreversibile per il tuo account.")) {
+                db.ref('users/' + userId + '/storico').remove();
+                db.ref('users/' + userId + '/storico_folders').remove().then(() => alert("Il tuo storico è stato svuotato correttamente."));
+            }
+        }
+    }
+
+    // --- 7. GESTIONE GENERAZIONE PDF ---
+    function generaPDFData(doc, match, startY) {
+        const { jsPDF } = window.jspdf;
+        doc.setFontSize(16);
+        doc.setTextColor(26, 35, 126);
+        doc.text(`${match.idTavolo} - ${match.data}`, 14, startY);
+        
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        
+        let st1 = Number(match.set1) || 0;
+        let st2 = Number(match.set2) || 0;
+        doc.text(`Risultato Finale: ${match.nome1} (${st1}) - ${match.nome2} (${st2})`, 14, startY + 7);
+        
+        const tableData = [];
+        if (match.setsDettaglio && match.setsDettaglio.length > 0) {
+            match.setsDettaglio.forEach((s, i) => {
+                tableData.push([`Set ${i+1}`, s.s0, s.s1]);
+            });
+        } else {
+            tableData.push(['-', 'Nessun dato', 'Nessun dato']);
+        }
+        
+        doc.autoTable({
+            startY: startY + 12,
+            head: [['', match.nome1, match.nome2]],
+            body: tableData,
+            theme: 'striped',
+            headStyles: { fillStyle: [26, 35, 126] }
+        });
+        
+        return doc.lastAutoTable.finalY + 15;
+    }
+
+    function generaUnicoPDF(matchKey) {
+        const match = rawStorico[matchKey];
+        if(!match) return;
+        const { jsPDF } = window.jspdf; 
+        const doc = new jsPDF();
+        generaPDFData(doc, match, 20);
+        doc.save(`Match_${match.nome1}_vs_${match.nome2}.pdf`);
+    }
+
+    function scaricaCartellaPDF() {
+        const partiteUniche = processMatchesUnici(rawStorico);
+        let partiteDaMostrare = partiteUniche.filter(p => {
+            const fId = p.folderId || 'root';
+            return fId === currentFolderView;
+        });
+
+        if (partiteDaMostrare.length === 0) return alert("Nessuna partita da scaricare in questa cartella.");
+        
+        const { jsPDF } = window.jspdf; 
+        const doc = new jsPDF();
+        
+        let folderName = "Storico Principale";
+        if(currentFolderView !== 'root' && currentFolderView !== 'trash' && rawFolders[currentFolderView]) {
+            folderName = rawFolders[currentFolderView].name;
+        } else if (currentFolderView === 'trash') {
+            folderName = "Cestino";
+        }
+
+        let y = 20; 
+        doc.setFontSize(22); 
+        doc.text("Storico - " + folderName, 14, y); 
+        y += 15;
+        
+        partiteDaMostrare.forEach(p => {
+            if (y > 250) { doc.addPage(); y = 20; }
+            y = generaPDFData(doc, p, y);
+        });
+        
+        doc.save(`Storico_${folderName}.pdf`);
+    }
+
+</script>
+</body>
+</html>
