@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direzione Gara - Biliardi</title>
+
+    <!-- Librerie Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+    
+    <!-- Librerie per esportazione PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f6f9; color: #333; overflow-x: hidden; display: flex; height: 100vh; }
+        
+        /* SCHERMATA LOGIN */
+        #login-screen { position: absolute; top:0; left:0; width:100%; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #eef2f5; z-index: 1000;}
+        .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        .login-input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
+        .btn-login { width: 100%; padding: 12px; background: #1a237e; color: white; border: none; border-radius: 6px; font-size: 1.1rem; cursor: pointer; font-weight: bold; margin-top: 10px;}
+
+        /* UTILITY LOGIN */
+        .pwd-container { position: relative; width: 100%; margin: 10px 0; }
+        .pwd-container .login-input { margin: 0; padding-right: 45px; }
+        .pwd-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 1.2rem; user-select: none; }
+        .remember-container { display: flex; align-items: center; width: 100%; margin-bottom: 10px; color: #555; font-size: 0.95rem; }
+        .remember-container input { margin-right: 8px; cursor: pointer; width: 16px; height: 16px; }
+        .remember-container label { cursor: pointer; }
+
+        /* LAYOUT PRINCIPALE CON SIDEBAR */
+        #dashboard-screen { display: none; width: 100%; height: 100vh; }
+        
+        /* SIDEBAR LATERALE */
+        .sidebar { width: 280px; background: #ffffff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; box-shadow: 2px 0 5px rgba(0,0,0,0.02); z-index: 10; flex-shrink: 0; overflow-y: auto;}
+        .logo-area { padding: 30px 20px; text-align: center; border-bottom: 1px solid #e0e0e0; }
+        .logo-area svg { width: 80px; height: auto; display: block; margin: 0 auto 10px auto; }
+        .logo-area h2 { font-size: 1.2rem; color: #2c3e50; margin-top: 10px; }
+        .user-email { font-size: 0.85rem; color: #7f8c8d; margin-top: 5px; word-break: break-all; font-weight: bold; }
+        
+        .nav-menu { flex: 1; padding-top: 20px; display: flex; flex-direction: column; }
+        .nav-item { padding: 15px 25px; color: #34495e; text-decoration: none; font-weight: 600; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; border-left: 4px solid transparent; transition: 0.2s;}
+        .nav-item:hover { background: #f8f9fa; }
+        .nav-item.active { background: #f0f4f8; color: #1a237e; border-left: 4px solid #1a237e; }
+        .nav-item span { margin-right: 15px; font-size: 1.3rem; }
+
+        /* MENU STORICO */
+        .nav-item-wrapper { position: relative; display: flex; align-items: center; }
+        .nav-item-wrapper .nav-item { flex: 1; padding-right: 50px; }
+        .btn-add-folder { position: absolute; right: 15px; background: none; border: none; font-size: 1.8rem; font-weight: bold; color: #95a5a6; cursor: pointer; transition: 0.2s; padding: 0 5px; line-height: 1; }
+        .btn-add-folder:hover { color: #1a237e; transform: scale(1.1); }
+        
+        .sidebar-folders { display: flex; flex-direction: column; background: #fafbfc; border-bottom: 1px solid #e0e0e0;}
+        .nav-sub-item { position: relative; padding: 10px 15px 10px 50px; color: #34495e; text-decoration: none; font-weight: 500; font-size: 1rem; cursor: pointer; display: flex; align-items: center; border-left: 4px solid transparent; transition: 0.2s;}
+        .nav-sub-item:hover { background: #f0f2f5; }
+        .nav-sub-item.active { background: #e8eaf6; color: #1a237e; border-left-color: #1a237e; font-weight: 600;}
+        .nav-sub-item.drag-over, .nav-item-wrapper.drag-over .nav-item { background: #d4efdf; border-left-color: #27ae60; color: #27ae60;}
+        .nav-sub-item span.f-icon { margin-right: 10px; font-size: 1.1rem; }
+        .nav-sub-item span.f-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: padding-right 0.2s; }
+        .nav-sub-item:hover span.f-name { padding-right: 55px; }
+        
+        .folder-actions-side { display: none; position: absolute; right: 10px; gap: 5px; background: inherit; padding-left: 5px;}
+        .nav-sub-item:hover .folder-actions-side { display: flex; }
+        .btn-side-action { background: none; border: none; cursor: pointer; font-size: 1rem; opacity: 0.6; transition: 0.2s;}
+        .btn-side-action:hover { opacity: 1; transform: scale(1.2); }
+        
+        /* CONTENUTO PRINCIPALE */
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; background: #f4f6f9; }
+        .tab-section { display: none; }
+        .tab-section.active { display: block; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .header h1 { color: #1a237e; font-size: 1.8rem; }
+        .header-btns { display: flex; gap: 15px; }
+        
+        .btn-action-header { color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-add { background: #27ae60; }
+        .btn-add:hover { background: #219150; }
+
+        /* DESIGN BILIARDI */
+        .table-row { display: flex; align-items: center; background: white; padding: 15px 20px; border-radius: 50px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); gap: 10px; transition: transform 0.1s;}
+        .table-row.dragging { opacity: 0.4; background: #e8eaf6; border: 2px dashed #1a237e; transform: scale(1.02); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .drag-handle { cursor: grab; font-size: 1.8rem; color: #95a5a6; padding-right: 5px; user-select: none; transition: 0.2s; display: flex; align-items: center; justify-content: center; width: 30px;}
+        .drag-handle:hover { color: #1a237e; }
+        .drag-handle:active { cursor: grabbing; }
+
+        .table-identity { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 140px; flex-shrink: 0; }
+        .table-real-id { font-size: 0.65rem; color: #95a5a6; font-weight: bold; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;}
+        .table-name-input { background: #1a237e; color: white; padding: 0 10px; height: 40px; border-radius: 20px; font-weight: bold; font-size: 1rem; width: 100%; text-align: center; border: 2px solid transparent; outline: none; transition: 0.2s; cursor: pointer; }
+        .table-name-input:focus { border-color: #f1c40f; background: #0f145b; }
+        
+        .pill { border-radius: 30px; border: 1px solid #ccc; height: 50px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 1.1rem; }
+        .pill-name { flex: 2; padding: 0 15px; }
+        .pill-name input { width: 100%; border: none; background: transparent; text-align: center; font-weight: 600; font-size: 1.2rem; color: #e67e22; outline: none; }
+        .pill-score { flex: 1; border-color: #e67e22; color: #e67e22; font-size: 1.6rem; }
+        
+        .pill-match { flex: 0.7; color: #1a237e; border-color: #1a237e; font-size: 1rem; cursor: pointer; user-select: none; transition: 0.2s; flex-direction: column; }
+        .pill-match:active { transform: scale(0.96); }
+        .set-display { flex-direction: column; align-items: center; justify-content: center; width: 100%; pointer-events: none; }
+        .set-display small { font-size: 0.65rem; color: #7f8c8d; text-transform: uppercase; margin-top: -2px; }
+        
+        .set-edit { flex-direction: column; align-items: center; justify-content: center; width: 100%; }
+        .btn-set-mod { background: #e8eaf6; color: #1a237e; border: 1px solid #1a237e; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; user-select: none; padding: 0; transition: 0.1s; }
+        .btn-set-mod:hover { background: #c5cae9; }
+        .btn-set-ok { background: #27ae60; color: white; border: none; border-radius: 4px; font-size: 0.65rem; padding: 2px 8px; margin-top: 2px; cursor: pointer; font-weight: bold; }
+        .btn-set-ok:hover { background: #219150; }
+        
+        .p2-score { background: #f39c12; color: white; border-color: #f39c12; }
+        .p2-name { background: #f39c12; color: white; border-color: #f39c12; }
+        .p2-name input { color: white; }
+        .p2-match { background: #f39c12; color: white; border-color: #f39c12; }
+        .p2-match .set-display small { color: rgba(255,255,255,0.9); }
+        .p2-match .btn-set-mod { background: white; color: #f39c12; border: none; }
+        .p2-match .btn-set-mod:hover { background: #fdf2e9; }
+
+        .btn-invert { background: #34495e; color: white; border: none; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; cursor: pointer; transition: 0.2s; margin: 0 5px; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .btn-invert:hover { background: #2c3e50; transform: scale(1.1); }
+
+        .action-btns { display: flex; gap: 8px; margin-left: auto; }
+        
+        .btn-reset { background: #95a5a6; color: white; border: none; height: 40px; padding: 0 15px; border-radius: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; font-size: 0.9rem; transition: 0.2s; }
+        .btn-reset:hover { background: #7f8c8d; }
+        
+        .btn-termina { background: #27ae60; color: white; border: none; height: 40px; padding: 0 15px; border-radius: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; font-size: 0.9rem; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.15);}
+        .btn-termina:hover { background: #219150; }
+        
+        .btn-remove { background: white; border: 2px solid #e74c3c; color: #e74c3c; width: 40px; height: 40px; border-radius: 50%; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.2s; user-select: none; -webkit-user-select: none; touch-action: none; }
+        .btn-remove:hover { background: #e74c3c; color: white; }
+
+        /* DESIGN STORICO */
+        .history-card { position: relative; background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid #1a237e; cursor: grab; transition: transform 0.1s;}
+        .history-card:active { cursor: grabbing; }
+        .history-card.dragging { opacity: 0.5; transform: scale(0.98); border: 2px dashed #1a237e; }
+        
+        .history-date { font-size: 0.9rem; color: #7f8c8d; margin-bottom: 8px; font-weight: bold;}
+        .history-result { font-size: 1.3rem; font-weight: bold; color: #2c3e50; }
+        .winner { color: #27ae60; }
+        .loser { color: #e74c3c; }
+
+        .history-card-actions { position: absolute; top: 15px; right: 15px; display: flex; align-items: center; gap: 10px; }
+        .btn-history-action { background: none; border: none; font-size: 1.4rem; cursor: pointer; transition: 0.2s; opacity: 0.6; padding: 0;}
+        .btn-history-action:hover { opacity: 1; transform: scale(1.1); }
+        
+        .sposta-in-select { background: #f8f9fa; border: 1px solid #bdc3c7; border-radius: 6px; padding: 4px 8px; font-size: 0.9rem; color: #2c3e50; cursor: pointer; outline: none; transition: 0.2s; font-weight: bold;}
+        .sposta-in-select:hover { border-color: #3498db; }
+
+        .history-logs-toggle { margin-top: 15px; font-size: 0.85rem; color: #1a237e; cursor: pointer; font-weight: bold; display: inline-block; padding: 6px 12px; background: #e8eaf6; border-radius: 6px; transition: 0.2s; user-select: none; }
+        .history-logs-toggle:hover { background: #c5cae9; }
+        
+        .sets-wrapper { display: none; flex-direction: column; gap: 15px; margin-top: 15px; }
+        .set-block { border: 1px solid #cfd8dc; border-radius: 8px; overflow: hidden; background: #f4f6f9; }
+        .set-title { background: #e8eaf6; padding: 10px 15px; font-weight: bold; color: #1a237e; border-bottom: 1px solid #cfd8dc; text-align: center; font-size: 1.1rem; }
+        
+        .history-logs-container { display: flex; gap: 20px; padding: 15px; }
+        .log-col { flex: 1; display: flex; flex-direction: column; }
+        .log-col strong { text-align: center; margin-bottom: 8px; color: #34495e; font-size: 1rem; border-bottom: 2px solid #bdc3c7; padding-bottom: 5px; text-transform: uppercase;}
+        .log-list { max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.95rem; background: white; border-radius: 6px; border: 1px solid #eceff1; padding: 5px; }
+        .log-entry { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid #f1f2f6; }
+        .log-entry:last-child { border-bottom: none; }
+        .tiro-val.plus { color: #27ae60; font-weight: bold; }
+        .tiro-val.minus { color: #e74c3c; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN -->
+    <div id="login-screen">
+        <div class="login-box">
+            <h2 style="margin-bottom: 20px; color: #1a237e;">Direzione Gara</h2>
+            
+            <form id="login-form" onsubmit="eseguiLogin(event)">
+                <input type="email" id="email" class="login-input" placeholder="Email Utente" autocomplete="username" required>
+                
+                <div class="pwd-container">
+                    <input type="password" id="pwd" class="login-input" placeholder="Password" autocomplete="current-password" required>
+                    <span class="pwd-toggle" id="eye-icon" onclick="togglePassword()" title="Mostra/Nascondi password">👁️</span>
+                </div>
+                
+                <div class="remember-container">
+                    <input type="checkbox" id="ricordami">
+                    <label for="ricordami">Ricorda credenziali</label>
+                </div>
+
+                <div id="error-msg" style="color: red; margin: 10px 0; display: none;">Credenziali errate</div>
+                <button type="submit" class="btn-login">ACCEDI</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard-screen">
+        <!-- SIDEBAR -->
+        <nav class="sidebar">
+            <div class="logo-area">
+                <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style="width: 80px; height: auto; display: block; margin: 0 auto 10px auto;">
+                    <path d="m 206.69145,24.412639 h 18 l 15,4 14,7 11,9 8,10 8,16 3,13 3,65.000001 v 27 h 9 l 9,4 8,7 4,10 v 12 l -4,9 -5,6 -9,5 -5,1 h -9 l -1,8 -5,14 -7,13 -11,14 -13,11 -6,4 v 25 l 14,10 56,1 13,4 11,7 7,-18 16,-43 15,-41 10,-27 23,-62 15,-41 13,-35.000001 15,-40 4,-3 9,1 19,7 4,4 v 7 l -13,40 -40,120.000001 -14,43 -32,96 -14,43 -16,48 -1,38 -5,5 h -313 l -5,-5 v -102 l 3,-11 6,-12 9,-10 9,-7 12,-5 5,-1 56,-1 13,-10 h 2 l -1,-25 -13,-9 -12,-12 -9,-14 -6,-14 -3,-10 v -5 h -10 l -9,-3 -9,-8 -4,-8 -1,-11 3,-10 7,-8 8,-5 4,-1 h 9 l -1,-19 -7,-49 1,-13.000001 5,-15 7,-11 7,-8 13,-9 12,-5 17,-3 38,-16 z" fill="#010000"/>
+                    <path d="m 145.69145,148.41264 h 2 l 7,8 12,9 11,5 16,4 77,1 v 48 l -4,17 -8,16 -11,13 -11,9 -16,8 -17,4 h -19 l -14,-3 -12,-5 -12,-7 -13,-13 -9,-14 -5,-13 -2,-10 v -51 l 16,-8 8,-9 z" fill="#f3c99f"/>
+                    <path d="m 204.69145,40.412639 h 21 l 12,4 10,6 8,7 7,11 4,10 1,4 3,61.000001 v 16 h -78 l -13,-4 -12,-7 -7,-7 -7,-10 -5,-14 -2,-15 -4,-3.000001 -7,1.000001 -2,3 -1,37 -4,10 -8,7 -3,1 -1,-1 -7,-49 v -9.000001 l 4,-13 7,-11 9,-8 11,-5 8,-2 12,-2 34,-15 z" fill="#2c2310"/>
+                    <path d="m 425.69145,359.41264 h 13 l 16,4 13,7 12,11 7,10 5,12 2,10 v 16 l -4,15 -6,11 -9,11 -11,8 -13,6 -9,2 h -19 l -14,-4 -13,-7 -9,-8 -9,-13 -5,-12 -2,-10 v -15 l 3,-12 8,-16 9,-10 11,-8 11,-5 z"/>
+                    <path d="m 447.69145,84.412639 5,1 3,1 -1,7 -14,43.000001 -33,99 -14,43 -33,99 -5,16 -3,1 -17,-6 3,-10 15,-41 14,-38 16,-43 17,-46 18,-49 13,-35 15,-40.000001 z" fill="#c29948"/>
+                    <path d="m 75.69145,345.41264 h 6 v 23 h -8 l -6,-5 -1,-3 v -7 l 3,-5 z" fill="#f0c69a"/>
+                    <path d="m 286.69145,190.41264 9,1 5,5 1,9 -4,6 -4,2 h -7 z" fill="#f0c79b"/>
+                </svg>
+                <h2>Direzione Gara</h2>
+                <div id="user-email-display" class="user-email"></div>
+            </div>
+            <div class="nav-menu">
+                <a class="nav-item active" id="menu-biliardi" onclick="cambiaScheda('biliardi')"><span>🕹️</span> Biliardi</a>
+                <div class="nav-item-wrapper" id="menu-storico-wrapper">
+                    <a class="nav-item" id="menu-storico" onclick="cambiaScheda('storico', 'root')"><span>🕒</span> Storico</a>
+                    <button class="btn-add-folder" onclick="creaCartellaStorico()" title="Nuova Cartella">+</button>
+                </div>
+                <div id="sidebar-folders" class="sidebar-folders"></div>
+                <a class="nav-sub-item" id="nav-folder-trash" onclick="cambiaScheda('storico', 'trash')" style="margin-top: 5px; border-top: 1px solid #e0e0e0;">
+                    <span class="f-icon" style="color: #e74c3c;">🗑️</span>
+                    <span class="f-name">Cestino</span>
+                </a>
+                <a class="nav-item" style="margin-top: auto; color: #e74c3c;" onclick="eseguiLogout()"><span>🚪</span> Logout</a>
+            </div>
+        </nav>
+
+        <!-- CONTENUTO DESTRA -->
+        <main class="main-content">
+            <div id="sez-biliardi" class="tab-section active">
+                <div class="header">
+                    <div>
+                        <h1>Gestione Segnapunti</h1>
+                        <p style="color: #7f8c8d; font-size: 0.9rem; margin-top: 5px;">I tuoi biliardi collegati a questo account.</p>
+                        <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 0.95rem; font-weight: bold; color: #e67e22;">Archiviazione Automatica:</span>
+                            <select id="global-folder-select" class="sposta-in-select" onchange="impostaCartellaDefault(this.value)" style="border-color: #e67e22; background: #fff;">
+                                <option value="root">Storico Principale</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="header-btns">
+                        <button class="btn-action-header btn-add" onclick="aggiungiTavolo()">➕ AGGIUNGI BILIARDO</button>
+                    </div>
+                </div>
+                <div id="tables-container">
+                    <p style="text-align: center; color: #7f8c8d; font-size: 1.2rem; margin-top: 50px;">Nessun biliardo collegato.</p>
+                </div>
+            </div>
+
+            <div id="sez-storico" class="tab-section">
+                <div class="header">
+                    <h1 id="storico-main-title">Storico Partite</h1>
+                    <div class="header-btns" id="storico-header-btns">
+                        <!-- Tasto download cartella -->
+                        <button id="btn-download-folder" class="btn-action-header" style="background: #2980b9;" onclick="scaricaCartellaPDF()">📥 SCARICA TUTTI I MATCH (PDF)</button>
+                        <button id="btn-empty-history" class="btn-action-header" style="background: #e74c3c;" onclick="svuotaStorico()">🗑️ SVUOTA STORICO</button>
+                        <button id="btn-empty-trash" class="btn-action-header" style="background: #e74c3c; display: none;" onclick="svuotaCestino()">🗑️ SVUOTA CESTINO</button>
+                    </div>
+                </div>
+                <div id="history-container">
+                    <p style="color: #7f8c8d;">Caricamento storico...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+    const firebaseConfig = { 
+        apiKey: "AIzaSyCKJs9TTf7wUipvOMWG-tgfzVlpIj0kmGk", 
+        authDomain: "billiard-scoreboard-3cbb5.firebaseapp.com", 
+        databaseURL: "https://billiard-scoreboard-3cbb5-default-rtdb.europe-west1.firebasedatabase.app", 
+        projectId: "billiard-scoreboard-3cbb5", 
+        appId: "1:50403982389:web:57c2b0dbe03b4b47dec57c" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database(); 
+    const auth = firebase.auth();
+
+    let userId = null; 
+    let mieiTavoli = {}; 
+    let tuttiITavoli = {}; 
+    let matchBuffers = {}; 
+    let removeTimer = null;
+    let isDragging = false; 
+    let setEditTimer = null;
+    let editingSet = { matchId: null, player: null };
+    let processingLock = {}; 
+    let rawStorico = {};
+    let rawFolders = {};
+    let draggedMatchId = null; 
+    let currentFolderView = 'root'; 
+    let defaultFolderId = 'root';
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const savedEmail = localStorage.getItem('biliardi_saved_email');
+        if (savedEmail) {
+            document.getElementById('email').value = savedEmail;
+            document.getElementById('ricordami').checked = true;
+        }
+        document.getElementById('tables-container').addEventListener('dragover', handleDragOver);
+    });
+
+    function togglePassword() {
+        const pwdInput = document.getElementById('pwd');
+        const eyeIcon = document.getElementById('eye-icon');
+        if (pwdInput.type === "password") { pwdInput.type = "text"; eyeIcon.innerText = "🙈"; } 
+        else { pwdInput.type = "password"; eyeIcon.innerText = "👁️"; }
+    }
+
+    function eseguiLogin(event) {
+        if (event) event.preventDefault(); 
+        const e = document.getElementById('email').value;
+        const p = document.getElementById('pwd').value;
+        const ricordami = document.getElementById('ricordami').checked;
+        if (ricordami) { localStorage.setItem('biliardi_saved_email', e); } 
+        else { localStorage.removeItem('biliardi_saved_email'); }
+        const persistence = ricordami ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
+        auth.setPersistence(persistence).then(() => auth.signInWithEmailAndPassword(e, p));
+    }
+
+    function eseguiLogout() { auth.signOut(); }
+
+    auth.onAuthStateChanged(user => {
+        if(user) {
+            userId = user.uid; 
+            document.getElementById('user-email-display').innerText = user.email;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('dashboard-screen').style.display = 'flex';
+            db.ref('users/' + userId + '/settings/defaultFolder').on('value', snap => {
+                defaultFolderId = snap.val() || 'root';
+                if(document.getElementById('global-folder-select')) document.getElementById('global-folder-select').value = defaultFolderId;
+            });
+            avviaAscoltoDati(); 
+            avviaAscoltoStorico();
+        } else {
+            if(userId) {
+                db.ref('users/' + userId + '/miei_tavoli').off();
+                db.ref('users/' + userId + '/storico').off();
+                db.ref('users/' + userId + '/storico_folders').off();
+                db.ref('users/' + userId + '/match_buffers').off();
+                db.ref('users/' + userId + '/settings/defaultFolder').off();
+                db.ref('matches').off();
+            }
+            userId = null;
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('dashboard-screen').style.display = 'none';
+        }
+    });
+
+    function cambiaScheda(scheda, folderId = 'root') {
+        document.querySelectorAll('.tab-section').forEach(el => el.classList.remove('active'));
+        document.getElementById('sez-' + scheda).classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-sub-item').forEach(el => el.classList.remove('active'));
+        if(scheda === 'biliardi') {
+            document.getElementById('menu-biliardi').classList.add('active');
+        } else if (scheda === 'storico') {
+            currentFolderView = folderId;
+            document.getElementById('btn-empty-history').style.display = folderId === 'trash' ? 'none' : 'block';
+            document.getElementById('btn-empty-trash').style.display = folderId === 'trash' ? 'block' : 'none';
+            document.getElementById('btn-download-folder').style.display = folderId === 'trash' ? 'none' : 'block';
+            if(folderId === 'root') {
+                document.getElementById('menu-storico').classList.add('active');
+                document.getElementById('storico-main-title').innerText = "Storico Partite";
+            } else if (folderId === 'trash') {
+                document.getElementById('nav-folder-trash').classList.add('active');
+                document.getElementById('storico-main-title').innerText = "Cestino";
+            } else {
+                let folderElem = document.getElementById('nav-folder-' + folderId);
+                if(folderElem) folderElem.classList.add('active');
+                if(rawFolders[folderId]) document.getElementById('storico-main-title').innerText = "Storico - " + rawFolders[folderId].name;
+            }
+            renderStoricoMatches(); 
+        }
+    }
+
+    function impostaCartellaDefault(folderId) {
+        defaultFolderId = folderId; 
+        db.ref('users/' + userId + '/settings/defaultFolder').set(folderId);
+    }
+
+    function updateGlobalFolderSelect() {
+        const select = document.getElementById('global-folder-select');
+        if(!select) return;
+        let options = `<option value="root">Storico Principale</option>`;
+        Object.keys(rawFolders).forEach(fId => { options += `<option value="${fId}">${rawFolders[fId].name}</option>`; });
+        select.innerHTML = options;
+        select.value = defaultFolderId;
+    }
+
+    // GESTIONE LIVE BILIARDI
+    function avviaAscoltoDati() {
+        db.ref('users/' + userId + '/miei_tavoli').on('value', s => { mieiTavoli = s.val() || {}; disegnaTabellone(); });
+        db.ref('users/' + userId + '/match_buffers').on('value', s => { matchBuffers = s.val() || {}; });
+        db.ref('matches').on('value', s => { tuttiITavoli = s.val() || {}; elaboraStatiPartite(); disegnaTabellone(); });
+    }
+
+    function elaboraStatiPartite() {
+        Object.keys(mieiTavoli).forEach(matchId => {
+            if (processingLock[matchId]) return;
+            const live = tuttiITavoli[matchId] || { n0: 'G1', n1: 'G2', s0: 0, s1: 0, st0: 0, st1: 0, l0: [], l1: [] };
+            let buffer = matchBuffers[matchId];
+            if (!buffer) {
+                buffer = { n0: live.n0, n1: live.n1, originalN0: live.n0, originalN1: live.n1, startTime: new Date().toLocaleString('it-IT'), sets: [], lastSt0: live.st0 || 0, lastSt1: live.st1 || 0, maxS0: live.s0 || 0, maxS1: live.s1 || 0, maxL0: live.l0 || [], maxL1: live.l1 || [], currentS0: live.s0 || 0, currentS1: live.s1 || 0 };
+                db.ref(`users/${userId}/match_buffers/${matchId}`).set(buffer); return;
+            }
+            if (live.forceArchive) {
+                processingLock[matchId] = true; archiviaPartita(matchId, buffer, null);
+                db.ref('matches/' + matchId).update({ s0: 0, s1: 0, st0: 0, st1: 0, l0: null, l1: null, ls0: "0", ls1: "0", n0: "GIOCATORE 1", n1: "GIOCATORE 2", forceArchive: null }).then(() => { setTimeout(() => { delete processingLock[matchId]; }, 2500); }); return;
+            }
+            let needsUpdate = false;
+            if (live.n0 === buffer.n1 && live.n1 === buffer.n0 && live.n0 !== live.n1) { buffer.originalN0 = live.n0; buffer.originalN1 = live.n1; needsUpdate = true; }
+            if (live.n0 !== buffer.originalN0 && live.n1 !== buffer.originalN1 && live.n0 !== 'GIOCATORE 1') { processingLock[matchId] = true; archiviaPartita(matchId, buffer, live); setTimeout(() => { delete processingLock[matchId]; }, 2500); return; }
+            if (buffer.n0 !== live.n0 || buffer.n1 !== live.n1) { buffer.n0 = live.n0; buffer.n1 = live.n1; needsUpdate = true; }
+            if (live.st0 > buffer.lastSt0 || live.st1 > buffer.lastSt1) {
+                if (!buffer.sets) buffer.sets = [];
+                buffer.sets.push({ s0: buffer.maxS0 || 0, s1: buffer.maxS1 || 0, l0: buffer.maxL0 || [], l1: buffer.maxL1 || [] });
+                buffer.lastSt0 = live.st0; buffer.lastSt1 = live.st1; buffer.maxS0 = live.s0; buffer.maxS1 = live.s1; buffer.maxL0 = live.l0 || []; buffer.maxL1 = live.l1 || []; needsUpdate = true;
+            } else if (live.st0 < buffer.lastSt0 || live.st1 < buffer.lastSt1) { buffer.lastSt0 = live.st0; buffer.lastSt1 = live.st1; needsUpdate = true; }
+            if (live.s0 !== buffer.currentS0 || live.s1 !== buffer.currentS1) {
+                if (live.s0 > 0) { buffer.maxS0 = live.s0; buffer.maxL0 = live.l0 || []; }
+                if (live.s1 > 0) { buffer.maxS1 = live.s1; buffer.maxL1 = live.l1 || []; }
+                buffer.currentS0 = live.s0; buffer.currentS1 = live.s1; needsUpdate = true;
+            }
+            if (needsUpdate) { db.ref(`users/${userId}/match_buffers/${matchId}`).set(buffer); }
+        });
+    }
+
+    function archiviaPartita(matchId, buffer, liveState = null) {
+        let finalSets = buffer.sets ? [...buffer.sets] : [];
+        if (buffer.maxS0 > 0 || buffer.maxS1 > 0 || buffer.maxL0?.length > 0 || buffer.maxL1?.length > 0) {
+            finalSets.push({ s0: buffer.maxS0, s1: buffer.maxS1, l0: buffer.maxL0 || [], l1: buffer.maxL1 || [] });
+        }
+        if (finalSets.some(s => s.s0 > 0 || s.s1 > 0)) {
+            const nomeTavoloVisualizzato = mieiTavoli[matchId]?.nome || matchId;
+            const datiStorico = { idTavolo: String(nomeTavoloVisualizzato), data: buffer.startTime, nome1: buffer.n0, set1: buffer.lastSt0, nome2: buffer.n1, set2: buffer.lastSt1, setsDettaglio: finalSets, folderId: defaultFolderId };
+            let cleanTime = buffer.startTime.replace(/[^a-zA-Z0-9]/g, '');
+            let uniqueKey = "MATCH_" + matchId + "_" + cleanTime;
+            db.ref('users/' + userId + '/storico/' + uniqueKey).set(datiStorico);
+        }
+        delete matchBuffers[matchId];
+        if (liveState) {
+            const newBuffer = { n0: liveState.n0, n1: liveState.n1, originalN0: liveState.n0, originalN1: liveState.n1, startTime: new Date().toLocaleString('it-IT'), sets: [], lastSt0: liveState.st0 || 0, lastSt1: liveState.st1 || 0, maxS0: liveState.s0 || 0, maxS1: liveState.s1 || 0, maxL0: liveState.l0 || [], maxL1: liveState.l1 || [], currentS0: liveState.s0 || 0, currentS1: liveState.s1 || 0 };
+            db.ref(`users/${userId}/match_buffers/${matchId}`).set(newBuffer);
+        } else { db.ref(`users/${userId}/match_buffers/${matchId}`).remove(); }
+    }
+
+    function disegnaTabellone() {
+        if (isDragging) return; 
+        const container = document.getElementById('tables-container');
+        const tavoliSorted = Object.keys(mieiTavoli).sort((a, b) => (mieiTavoli[a].ordine || 0) - (mieiTavoli[b].ordine || 0));
+        if(tavoliSorted.length === 0) { container.innerHTML = '<p style="text-align: center; color: #7f8c8d; font-size: 1.2rem; margin-top: 50px;">Nessun biliardo collegato.</p>'; return; }
+        container.querySelectorAll('.table-row').forEach(row => { if (!mieiTavoli[row.id.replace('row-', '')]) row.remove(); });
+        tavoliSorted.forEach((matchId, index) => {
+            const dati = tuttiITavoli[matchId] || { n0: 'G1', n1: 'G2', s0: 0, s1: 0, st0: 0, st1: 0 };
+            const nomeDaMostrare = mieiTavoli[matchId].nome || matchId;
+            const isEditG1 = (editingSet.matchId === matchId && editingSet.player === 0);
+            const isEditG2 = (editingSet.matchId === matchId && editingSet.player === 1);
+            let row = document.getElementById(`row-${matchId}`);
+            if (!row) {
+                row = document.createElement('div'); row.className = 'table-row'; row.id = `row-${matchId}`; row.draggable = true; 
+                row.addEventListener('dragstart', (e) => { isDragging = true; e.target.classList.add('dragging'); });
+                row.addEventListener('dragend', (e) => { e.target.classList.remove('dragging'); salvaNuovoOrdine(); isDragging = false; });
+                container.appendChild(row);
+            }
+            row.innerHTML = `
+                <div class="drag-handle">☰</div>
+                <div class="table-identity">
+                    <div class="table-real-id">ID: ${matchId}</div>
+                    <input type="text" class="table-name-input" value="${nomeDaMostrare}" onchange="salvaNomeEstetico('${matchId}', this.value)">
+                </div>
+                <div class="pill pill-name"><input type="text" id="n0-${matchId}" value="${dati.n0 || 'G1'}" onchange="aggiornaDatoTablet('${matchId}', 'n0', this.value)"></div>
+                <div class="pill pill-match" onpointerdown="startSetEditTimer('${matchId}', 0)" onpointerup="cancelSetEditTimer()">
+                    <div class="set-display" style="display:${isEditG1?'none':'flex'}"><div style="font-weight:bold; font-size:1.3rem;">${dati.st0 || 0}</div><small>Set</small></div>
+                    <div class="set-edit" style="display:${isEditG1?'flex':'none'}">
+                        <div style="display:flex; align-items:center; gap:4px;"><button class="btn-set-mod" onclick="modificaSetDashboard('${matchId}', 0, -1)">-</button><div>${dati.st0 || 0}</div><button class="btn-set-mod" onclick="modificaSetDashboard('${matchId}', 0, 1)">+</button></div>
+                        <button class="btn-set-ok" onclick="closeSetEdit()">OK</button>
+                    </div>
+                </div>
+                <div class="pill pill-score">${dati.s0 || 0}</div>
+                <button class="btn-invert" onclick="invertiGiocatoriDashboard('${matchId}')">⇄</button>
+                <div class="pill pill-score p2-score">${dati.s1 || 0}</div>
+                <div class="pill pill-match p2-match" onpointerdown="startSetEditTimer('${matchId}', 1)" onpointerup="cancelSetEditTimer()">
+                    <div class="set-display" style="display:${isEditG2?'none':'flex'}"><div style="font-weight:bold; font-size:1.3rem;">${dati.st1 || 0}</div><small>Set</small></div>
+                    <div class="set-edit" style="display:${isEditG2?'flex':'none'}">
+                        <div style="display:flex; align-items:center; gap:4px;"><button class="btn-set-mod" onclick="modificaSetDashboard('${matchId}', 1, -1)">-</button><div>${dati.st1 || 0}</div><button class="btn-set-mod" onclick="modificaSetDashboard('${matchId}', 1, 1)">+</button></div>
+                        <button class="btn-set-ok" onclick="closeSetEdit()">OK</button>
+                    </div>
+                </div>
+                <div class="pill pill-name p2-name"><input type="text" id="n1-${matchId}" value="${dati.n1 || 'G2'}" onchange="aggiornaDatoTablet('${matchId}', 'n1', this.value)"></div>
+                <div class="action-btns">
+                    <button class="btn-reset" onclick="azzeraTavoloSolo('${matchId}')">🔄 AZZERA</button>
+                    <button class="btn-termina" onclick="terminaESalvaTavolo('${matchId}')">💾 TERMINA E SALVA</button>
+                    <button class="btn-remove" onpointerdown="startRemoveTimer('${matchId}')" onpointerup="cancelRemoveTimer()">🗑️</button>
+                </div>
+            `;
+            if (container.children[index] !== row) container.insertBefore(row, container.children[index]);
+        });
+    }
+
+    function aggiornaDatoTablet(matchId, chiave, valore) { db.ref('matches/' + matchId).update({ [chiave]: valore }); }
+    function salvaNomeEstetico(matchId, nome) { db.ref('users/' + userId + '/miei_tavoli/' + matchId).update({ nome: nome.trim() || matchId }); }
+    function azzeraTavoloSolo(m) { if(confirm("Azzera punteggio attuale?")) { processingLock[m]=true; db.ref(`users/${userId}/match_buffers/${m}`).remove(); db.ref('matches/'+m).update({s0:0,s1:0,st0:0,st1:0,l0:null,l1:null,ls0:"0",ls1:"0"}).then(()=>delete processingLock[m]); } }
+    function terminaESalvaTavolo(m) { if(confirm("Termina e archivia?")) { processingLock[m]=true; const buf = matchBuffers[m]; const live = tuttiITavoli[m]; if(buf && live) { if(live.s0>live.s1) buf.lastSt0++; else if(live.s1>live.s0) buf.lastSt1++; buf.maxS0=live.s0; buf.maxS1=live.s1; archiviaPartita(m, buf); } db.ref('matches/'+m).update({s0:0,s1:0,st0:0,st1:0,l0:null,l1:null,ls0:"0",ls1:"0"}).then(()=>delete processingLock[m]); } }
+    function startRemoveTimer(m) { removeTimer = setTimeout(() => { if(confirm("Rimuovere tavolo?")) db.ref('users/'+userId+'/miei_tavoli/'+m).remove(); }, 5000); }
+    function cancelRemoveTimer() { clearTimeout(removeTimer); }
+    function salvaNuovoOrdine() { const container = document.getElementById('tables-container'); let updates = {}; container.querySelectorAll('.table-row').forEach((row, i) => updates[row.id.replace('row-','')+'/ordine'] = i); db.ref('users/'+userId+'/miei_tavoli').update(updates); }
+    function handleDragOver(e) { e.preventDefault(); const container = document.getElementById('tables-container'); const dragging = container.querySelector('.dragging'); if(!dragging) return; const after = [...container.querySelectorAll('.table-row:not(.dragging)')].reduce((closest, child) => { const box = child.getBoundingClientRect(); const offset = e.clientY - box.top - box.height/2; if(offset < 0 && offset > closest.offset) return { offset: offset, element: child }; else return closest; }, { offset: Number.NEGATIVE_INFINITY }).element; if(!after) container.appendChild(dragging); else container.insertBefore(dragging, after); }
+    function invertiGiocatoriDashboard(m) { const d = tuttiITavoli[m]; db.ref('matches/'+m).update({ n0:d.n1, n1:d.n0, s0:d.s1, s1:d.s0, st0:d.st1, st1:d.st0, l0:d.l1||null, l1:d.l0||null }); }
+
+    // STORICO E PDF
+    function avviaAscoltoStorico() {
+        db.ref('users/'+userId+'/storico_folders').on('value', s => { rawFolders = s.val() || {}; updateGlobalFolderSelect(); renderSidebarFolders(); renderStoricoMatches(); });
+        db.ref('users/'+userId+'/storico').on('value', s => { rawStorico = s.val() || {}; renderSidebarFolders(); renderStoricoMatches(); });
+    }
+
+    function renderSidebarFolders() {
+        const container = document.getElementById('sidebar-folders'); container.innerHTML = '';
+        const menuStorico = document.getElementById('menu-storico-wrapper'); attachDropToSidebar(menuStorico, 'root');
+        const menuTrash = document.getElementById('nav-folder-trash'); attachDropToSidebar(menuTrash, 'trash');
+        Object.keys(rawFolders).forEach(fId => {
+            const a = document.createElement('a'); a.className = 'nav-sub-item'; a.id = 'nav-folder-'+fId;
+            if(currentFolderView === fId) a.classList.add('active');
+            a.onclick = () => cambiaScheda('storico', fId);
+            a.innerHTML = `<span class="f-icon">📁</span><span class="f-name" title="${rawFolders[fId].name}">${rawFolders[fId].name}</span>
+                <div class="folder-actions-side">
+                    <button class="btn-side-action" style="color:#f39c12" onclick="event.stopPropagation(); rinominaCartella('${fId}','${rawFolders[fId].name}')">✏️</button>
+                    <button class="btn-side-action" style="color:#e74c3c" onclick="event.stopPropagation(); eliminaCartella('${fId}')">🗑️</button>
+                </div>`;
+            attachDropToSidebar(a, fId); container.appendChild(a);
+        });
+    }
+
+    function attachDropToSidebar(el, id) {
+        el.ondragover = (e) => { e.preventDefault(); el.classList.add('drag-over'); };
+        el.ondragleave = () => el.classList.remove('drag-over');
+        el.ondrop = (e) => { e.preventDefault(); el.classList.remove('drag-over'); if(draggedMatchId) db.ref('users/'+userId+'/storico/'+draggedMatchId).update({ folderId: id }); };
+    }
+
+    function renderStoricoMatches() {
+        const container = document.getElementById('history-container'); container.innerHTML = '';
+        const partite = Object.entries(rawStorico).map(([k, v]) => ({ k, ...v })).filter(p => (p.folderId || 'root') === currentFolderView);
+        if(partite.length === 0) { container.innerHTML = '<p style="text-align:center; margin-top:30px;">Vuoto.</p>'; return; }
+        partite.sort((a,b) => b.data.localeCompare(a.data)).forEach(p => {
+            const card = document.createElement('div'); card.className = 'history-card'; card.draggable = true;
+            card.ondragstart = () => { draggedMatchId = p.k; card.classList.add('dragging'); };
+            card.ondragend = () => { draggedMatchId = null; card.classList.remove('dragging'); };
+            let opt = `<option value="root">Storico Principale</option>` + Object.keys(rawFolders).map(fId => `<option value="${fId}">${rawFolders[fId].name}</option>`).join("");
+            card.innerHTML = `
+                <div class="history-card-actions">
+                    <button class="btn-history-action" style="color:#2980b9" title="Scarica PDF" onclick="generaUnicoPDF('${p.k}')">📥</button>
+                    <select class="sposta-in-select" onchange="db.ref('users/${userId}/storico/${p.k}').update({ folderId: this.value })">
+                        <option disabled selected>Sposta...</option>${opt}
+                    </select>
+                    ${p.folderId === 'trash' ? `<button class="btn-history-action" style="color:#27ae60" onclick="db.ref('users/${userId}/storico/${p.k}').update({folderId:'root'})">♻️</button>` : ""}
+                    <button class="btn-history-action" style="color:#e74c3c" onclick="eliminaPartitaStorico('${p.k}')">${p.folderId==='trash'?'❌':'🗑️'}</button>
+                </div>
+                <div class="history-date">${p.data} | ${p.idTavolo}</div>
+                <div class="history-result"><b>${p.nome1} (${p.set1})</b> vs <b>${p.nome2} (${p.set2})</b></div>
+                <div class="history-logs-toggle" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display==='none'?'block':'none'">📜 Dettagli</div>
+                <div class="sets-wrapper" style="display:none">${(p.setsDettaglio||[]).map((s,i)=>`<div>Set ${i+1}: ${s.s0}-${s.s1}</div>`).join("")}</div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    // GESTIONE PDF
+    function generaPDFData(doc, match, startY) {
+        const { jsPDF } = window.jspdf;
+        doc.setFontSize(16); doc.setTextColor(26, 35, 126);
+        doc.text(`${match.idTavolo} - ${match.data}`, 14, startY);
+        doc.setFontSize(12); doc.setTextColor(0, 0, 0);
+        doc.text(`Risultato Finale: ${match.nome1} (${match.set1}) - ${match.nome2} (${match.set2})`, 14, startY + 7);
+        
+        const tableData = (match.setsDettaglio || []).map((s, i) => [`Set ${i+1}`, s.s0, s.s1]);
+        doc.autoTable({
+            startY: startY + 12, head: [['Tempo/Set', match.nome1, match.nome2]], body: tableData,
+            theme: 'striped', headStyles: { fillStyle: [26, 35, 126] }
+        });
+        return doc.lastAutoTable.finalY + 15;
+    }
+
+    function generaUnicoPDF(matchKey) {
+        const { jsPDF } = window.jspdf; const doc = new jsPDF();
+        generaPDFData(doc, rawStorico[matchKey], 20);
+        doc.save(`Match_${rawStorico[matchKey].nome1}_vs_${rawStorico[matchKey].nome2}.pdf`);
+    }
+
+    function scaricaCartellaPDF() {
+        const partite = Object.entries(rawStorico).map(([k, v]) => ({ k, ...v })).filter(p => (p.folderId || 'root') === currentFolderView);
+        if (partite.length === 0) return alert("Cartella vuota.");
+        const { jsPDF } = window.jspdf; const doc = new jsPDF();
+        let y = 20; doc.setFontSize(22); doc.text(document.getElementById('storico-main-title').innerText, 14, y); y += 15;
+        partite.sort((a,b) => b.data.localeCompare(a.data)).forEach(p => {
+            if (y > 250) { doc.addPage(); y = 20; }
+            y = generaPDFData(doc, p, y);
+        });
+        doc.save(`${document.getElementById('storico-main-title').innerText}.pdf`);
+    }
+
+    function creaCartellaStorico() { const n = prompt("Nome cartella:"); if(n) db.ref('users/'+userId+'/storico_folders').push({ name: n.trim() }); }
+    function rinominaCartella(id, old) { const n = prompt("Nuovo nome:", old); if(n) db.ref('users/'+userId+'/storico_folders/'+id).update({ name: n.trim() }); }
+    function eliminaCartella(id) { if(confirm("Eliminare cartella? I match andranno nel cestino.")) { Object.keys(rawStorico).forEach(k => { if(rawStorico[k].folderId===id) db.ref('users/'+userId+'/storico/'+k).update({folderId:'trash'}); }); db.ref('users/'+userId+'/storico_folders/'+id).remove(); } }
+    function svuotaCestino() { if(confirm("Svuotare definitivamente?")) { let up={}; Object.keys(rawStorico).forEach(k => { if(rawStorico[k].folderId==='trash') up[k]=null; }); db.ref('users/'+userId+'/storico').update(up); } }
+    function svuotaStorico() { if(confirm("ATTENZIONE: Svuotare tutto?")) { db.ref('users/'+userId+'/storico').remove(); db.ref('users/'+userId+'/storico_folders').remove(); } }
+    function eliminaPartitaStorico(k) { if(rawStorico[k].folderId==='trash') { if(confirm("Elimina per sempre?")) db.ref('users/'+userId+'/storico/'+k).remove(); } else db.ref('users/'+userId+'/storico/'+k).update({folderId:'trash'}); }
+
+</script>
+</body>
+</html>
