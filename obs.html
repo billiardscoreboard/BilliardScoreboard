@@ -23,54 +23,36 @@
       color: white;
     }
 
-    /* CONTENITORE PADRE (Fissa le dimensioni generali) */
-    .scoreboard-wrapper {
+    /* BARRA PRINCIPALE DEL PUNTEGGIO */
+    .scoreboard-bar {
       position: absolute;
-      top: 40px; /* Distanza dall'alto */
+      top: 40px; 
       left: 50%;
       transform: translateX(-50%);
       width: 1400px;
       max-width: 96vw;
       height: 70px;
-    }
-
-    /* BARRA PRINCIPALE: Usa una divisione matematica dello spazio */
-    .scoreboard-bar {
-      position: relative; /* Serve per tenere il logo bloccato al centro */
-      width: 100%;
-      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       background: rgba(7, 31, 20, 0.95);
       border: 3px solid #ffffff;
       border-radius: 35px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-      display: flex;
-      justify-content: space-between; /* Spinge G1 tutto a sx e G2 tutto a dx */
+      padding: 0 20px;
     }
 
-    /* LATI DEI GIOCATORI: Bloccati al 50% dello schermo (meno il buco per il logo) */
+    /* CONTENITORI DEI GIOCATORI */
     .player-side {
-      width: calc(50% - 60px); /* Lascia esattamente 120px di buco al centro */
-      height: 100%;
       display: flex;
       align-items: center;
+      flex: 1;
     }
+    .p1 { justify-content: flex-end; }
+    .p2 { justify-content: flex-start; }
 
-    .p1-side {
-      justify-content: flex-end;
-      padding-left: 20px;
-    }
-
-    .p2-side {
-      justify-content: flex-start;
-      padding-right: 20px;
-    }
-
-    /* IL LOGO: Indipendente, non viene mai spinto da nessun testo */
+    /* LOGO CENTRALE CLASSICO */
     .center-logo {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
       width: 110px;
       height: 110px;
       background: #0b2b1c;
@@ -79,11 +61,10 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      z-index: 100;
+      margin: 0 20px;
       box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+      flex-shrink: 0;
     }
-
-    /* Ripristinata l'immagine nativa che OBS legge perfettamente */
     .center-logo img {
       width: 70%;
       height: auto;
@@ -97,24 +78,23 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      flex-grow: 1; /* Il nome occupa tutto lo spazio rimanente della sua "gabbia" */
+      max-width: 350px;
     }
-    .p1-name { text-align: right; color: #ffffff; }
-    .p2-name { text-align: left; color: #facc15; }
+    .p1 .player-name { color: #ffffff; text-align: right; }
+    .p2 .player-name { color: #facc15; text-align: left; }
 
     /* PUNTEGGI */
     .player-score {
       font-size: 52px;
       font-weight: 900;
-      text-align: center;
-      min-width: 80px;
-      flex-shrink: 0;
       line-height: 1;
+      min-width: 70px;
+      text-align: center;
     }
-    .p1-score { color: #ffffff; margin-left: 20px; }
-    .p2-score { color: #facc15; margin-right: 20px; }
+    .p1 .player-score { color: #ffffff; margin-left: 20px; }
+    .p2 .player-score { color: #facc15; margin-right: 20px; }
 
-    /* INDICATORI DEI SET (Ripristinati) */
+    /* INDICATORI DEI SET */
     .player-set {
       width: 46px;
       height: 46px;
@@ -124,39 +104,37 @@
       align-items: center;
       font-size: 28px;
       font-weight: 900;
-      flex-shrink: 0;
       box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      flex-shrink: 0;
     }
-    .p1-set { margin-right: 20px; background: #ffffff; color: #000000; border: 2px solid #ffffff; }
-    .p2-set { margin-left: 20px; background: #facc15; color: #000000; border: 2px solid #facc15; }
+    .p1 .player-set { margin-right: 20px; background: #ffffff; color: #000000; border: 2px solid #ffffff; }
+    .p2 .player-set { margin-left: 20px; background: #facc15; color: #000000; border: 2px solid #facc15; }
 
   </style>
 </head>
 <body>
 
-  <div class="scoreboard-wrapper">
-    <div class="scoreboard-bar">
-      
-      <!-- LATO SINISTRO: GIOCATORE 1 -->
-      <div class="player-side p1-side">
-        <div class="player-set p1-set" id="st0">0</div>
-        <div class="player-name p1-name" id="n0">GIOCATORE 1</div>
-        <div class="player-score p1-score" id="s0">0</div>
-      </div>
-
-      <!-- LOGO CENTRALE BLOCCATO E INDIPENDENTE -->
-      <div class="center-logo">
-        <img src="Logo_App_Trasparente.svg" alt="Logo" />
-      </div>
-
-      <!-- LATO DESTRO: GIOCATORE 2 -->
-      <div class="player-side p2-side">
-        <div class="player-score p2-score" id="s1">0</div>
-        <div class="player-name p2-name" id="n1">GIOCATORE 2</div>
-        <div class="player-set p2-set" id="st1">0</div>
-      </div>
-
+  <div class="scoreboard-bar">
+    
+    <!-- LATO SINISTRO: GIOCATORE 1 -->
+    <div class="player-side p1">
+      <div class="player-set" id="st0">0</div>
+      <div class="player-name" id="n0">GIOCATORE 1</div>
+      <div class="player-score" id="s0">0</div>
     </div>
+
+    <!-- LOGO CENTRALE -->
+    <div class="center-logo">
+      <img src="Logo_App_Trasparente.svg" alt="Logo">
+    </div>
+
+    <!-- LATO DESTRO: GIOCATORE 2 -->
+    <div class="player-side p2">
+      <div class="player-score" id="s1">0</div>
+      <div class="player-name" id="n1">GIOCATORE 2</div>
+      <div class="player-set" id="st1">0</div>
+    </div>
+
   </div>
 
   <script>
@@ -179,12 +157,12 @@
       db.ref('matches/' + matchId).on('value', snap => {
         const data = snap.val();
         if(data) {
-          // Aggiorna Giocatore 1 e ripristina la visualizzazione Set
+          // Aggiorna Giocatore 1
           document.getElementById('n0').innerText = data.n0 || "GIOCATORE 1";
           document.getElementById('s0').innerText = data.s0 || 0;
           document.getElementById('st0').innerText = data.st0 || 0;
 
-          // Aggiorna Giocatore 2 e ripristina la visualizzazione Set
+          // Aggiorna Giocatore 2
           document.getElementById('n1').innerText = data.n1 || "GIOCATORE 2";
           document.getElementById('s1').innerText = data.s1 || 0;
           document.getElementById('st1').innerText = data.st1 || 0;
