@@ -13,17 +13,16 @@
       padding: 0;
       background: transparent;
       font-family: 'Roboto', sans-serif;
-      /* RIMOSSO OVERFLOW HIDDEN: Ora la barra è libera di allargarsi oltre lo schermo di base se necessario */
+      overflow: hidden;
       display: flex;
       justify-content: center;
       align-items: flex-start;
       padding-top: 20px;
     }
 
-    /* BARRA PRINCIPALE - Griglia che bilancia il peso dei due lati */
+    /* BARRA PRINCIPALE SOLIDA */
     .scoreboard-container {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr; 
+      display: flex;
       align-items: center;
       background: #071f14; 
       border: 3px solid #000;
@@ -34,34 +33,30 @@
       gap: 40px; 
     }
 
-    /* SCATOLE GIOCATORI */
+    /* CONTENITORI GIOCATORI */
     .player-box {
       display: flex;
       align-items: center;
       gap: 15px;
-      white-space: nowrap; /* Impone a tutti gli elementi di NON andare a capo */
+      min-width: 460px; /* Larghezza base della tua grafica */
+      white-space: nowrap; /* Impone ai nomi di NON andare a capo, spingendo in fuori la barra */
     }
-    
-    /* G1 Spinge contro il logo, G2 Spinge contro il logo */
-    .p1-box { justify-content: flex-end; }
-    .p2-box { justify-content: flex-start; }
+
+    /* G1 spinge i suoi elementi contro il logo. G2 spinge contro il logo */
+    #p1-box { justify-content: flex-end; }
+    #p2-box { justify-content: flex-start; }
 
     .player-icon {
       height: 50px;
       width: auto;
-      flex-shrink: 0; /* Impedisce lo schiacciamento dell'icona */
+      flex-shrink: 0; /* Impedisce all'icona di deformarsi */
     }
 
-    /* NOMI GIOCATORI */
     .name {
       font-size: 33.6px; 
       text-transform: uppercase;
       min-width: 150px;
-      white-space: nowrap; 
-      flex-shrink: 0; /* IMPEDISCE che il nome si rimpicciolisca o venga tagliato, forzando l'allargamento della barra */
     }
-    .p1-box .name { text-align: right; }
-    .p2-box .name { text-align: left; }
 
     /* PUNTEGGI - VERDE BOSCO */
     .score {
@@ -72,7 +67,7 @@
       border-radius: 5px;
       min-width: 60px;
       text-align: center;
-      flex-shrink: 0; /* Blocca la dimensione */
+      flex-shrink: 0;
     }
 
     .sets {
@@ -86,14 +81,14 @@
       justify-content: center;
       border-radius: 50%;
       font-weight: bold;
-      flex-shrink: 0; /* Blocca la dimensione */
+      flex-shrink: 0;
     }
 
     /* LOGO CENTRALE */
     .center-logo {
       height: 65px; 
       width: auto;
-      flex-shrink: 0; /* Blocca la dimensione del logo */
+      flex-shrink: 0;
     }
 
     /* COLORI SPECIFICI P2 */
@@ -107,22 +102,21 @@
 
   <div class="scoreboard-container">
     
-    <!-- BOX GIOCATORE 1 -->
-    <div class="player-box p1-box">
+    <!-- Aggiunto ID p1-box per la bilancia -->
+    <div class="player-box" id="p1-box">
       <img src="Logo_Giocatore_Bianco.svg" class="player-icon" alt="P1 Icon">
       <div id="name0" class="name">GIOCATORE 1</div>
       <div id="st0" class="sets">0</div>
       <div id="score0" class="score">0</div>
     </div>
 
-    <!-- LOGO CENTRALE -->
     <img src="Logo_App_Colorato.svg" class="center-logo" alt="App Logo">
 
-    <!-- BOX GIOCATORE 2 -->
-    <div class="player-box p2-box">
+    <!-- Aggiunto ID p2-box per la bilancia -->
+    <div class="player-box" id="p2-box">
       <div id="score1" class="score p2-score">0</div>
       <div id="st1" class="sets p2-sets">0</div>
-      <div id="name1" class="name p2-name">GIOCATORE 2</div>
+      <div id="name1" class="name p2-name" style="text-align: right;">GIOCATORE 2</div>
       <img src="Logo_Giocatore_Giallo.svg" class="player-icon" alt="P2 Icon">
     </div>
 
@@ -154,6 +148,28 @@
         document.getElementById('score1').innerText = data.s1 || 0;
         document.getElementById('st0').innerText = data.st0 || 0;
         document.getElementById('st1').innerText = data.st1 || 0;
+
+        // --- TRUCCO DELLA BILANCIA SIMMETRICA ---
+        // Quando arriva un aggiornamento, calcola quale lato pesa di più e rende l'altro identico.
+        setTimeout(() => {
+          const p1 = document.getElementById('p1-box');
+          const p2 = document.getElementById('p2-box');
+          
+          // Sblocca la larghezza per misurare il reale ingombro dei testi
+          p1.style.width = 'auto';
+          p2.style.width = 'auto';
+          
+          // Misura i pixel occupati da entrambi i lati
+          const w1 = p1.scrollWidth;
+          const w2 = p2.scrollWidth;
+          
+          // Trova il più largo dei due (partendo sempre da una base di 460px)
+          const maxW = Math.max(w1, w2, 460); 
+          
+          // Impone la larghezza vincente ad entrambi i lati: barra simmetrica, logo al centro.
+          p1.style.width = maxW + 'px';
+          p2.style.width = maxW + 'px';
+        }, 10);
       }
     });
   } else {
