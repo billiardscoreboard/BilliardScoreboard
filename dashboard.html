@@ -24,20 +24,32 @@
         .login-input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
         .btn-login { width: 100%; padding: 12px; background: #1a237e; color: white; border: none; border-radius: 6px; font-size: 1.1rem; cursor: pointer; font-weight: bold; margin-top: 10px;}
 
-        /* UTILITY LOGIN */
-        .pwd-container { position: relative; width: 100%; margin: 10px 0; }
-        .pwd-container .login-input { margin: 0; padding-right: 45px; }
-        .pwd-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 1.2rem; user-select: none; }
-        
-        /* DASHBOARD SCREEN */
+        /* LAYOUT PRINCIPALE CON SIDEBAR */
         #dashboard-screen { display: none; width: 100%; height: 100vh; }
         
-        /* SIDEBAR */
+        /* SIDEBAR LATERALE */
         .sidebar { width: 280px; background: #ffffff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; box-shadow: 2px 0 5px rgba(0,0,0,0.02); z-index: 10; flex-shrink: 0; overflow-y: auto;}
-        .logo-area { padding: 25px 20px; text-align: center; border-bottom: 1px solid #e0e0e0; }
-        .logo-area img { width: 120px; height: auto; display: block; margin: 0 auto 10px auto; }
-        .logo-area h2 { font-size: 1.2rem; color: #2c3e50; }
-        .user-email { font-size: 0.85rem; color: #7f8c8d; margin-top: 5px; font-weight: bold; word-break: break-all; }
+        
+        .logo-area { 
+            padding: 20px; 
+            text-align: center; 
+            border-bottom: 1px solid #e0e0e0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+
+        .logo-area img { 
+            width: 140px;      /* Dimensione ottimale per il logo */
+            height: auto;      /* Impedisce l'effetto schiacciato */
+            max-height: 140px; 
+            object-fit: contain; /* Mantiene l'integrità del disegno[cite: 2] */
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .logo-area h2 { font-size: 1.1rem; color: #1a237e; margin-top: 5px; }
+        .user-email { font-size: 0.85rem; color: #7f8c8d; margin-top: 5px; word-break: break-all; font-weight: bold; }
         
         .nav-menu { flex: 1; padding-top: 20px; display: flex; flex-direction: column; }
         .nav-item { padding: 15px 25px; color: #34495e; text-decoration: none; font-weight: 600; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; border-left: 4px solid transparent; transition: 0.2s;}
@@ -45,36 +57,40 @@
         .nav-item.active { background: #f0f4f8; color: #1a237e; border-left: 4px solid #1a237e; }
         .nav-item span { margin-right: 15px; font-size: 1.3rem; }
 
-        /* CONTENUTO */
+        /* CONTENUTO PRINCIPALE */
         .main-content { flex: 1; padding: 40px; overflow-y: auto; background: #f4f6f9; }
         .tab-section { display: none; }
         .tab-section.active { display: block; }
 
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .header h1 { color: #1a237e; font-size: 1.8rem; }
+        
         .btn-action-header { color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .btn-add { background: #27ae60; }
 
-        /* RIGHE BILIARDI */
-        .table-row { display: flex; align-items: center; background: white; padding: 15px 20px; border-radius: 50px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); gap: 10px; }
-        .table-identity { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 130px; flex-shrink: 0; }
-        .table-real-id { font-size: 0.65rem; color: #95a5a6; font-weight: bold; text-transform: uppercase; margin-bottom: 3px; }
-        .table-name-input { background: #1a237e; color: white; padding: 0 10px; height: 36px; border-radius: 18px; font-weight: bold; font-size: 0.9rem; width: 100%; text-align: center; border: 2px solid transparent; outline: none; }
+        /* DESIGN RIGHE BILIARDI */
+        .table-row { display: flex; align-items: center; background: white; padding: 15px 20px; border-radius: 50px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); gap: 10px;}
+        .table-identity { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 140px; flex-shrink: 0; }
+        .table-real-id { font-size: 0.65rem; color: #95a5a6; font-weight: bold; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;}
+        .table-name-input { background: #1a237e; color: white; padding: 0 10px; height: 40px; border-radius: 20px; font-weight: bold; font-size: 1rem; width: 100%; text-align: center; border: 2px solid transparent; outline: none; }
         
         .pill { border-radius: 30px; border: 1px solid #ccc; height: 50px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 1.1rem; }
         .pill-name { flex: 2; padding: 0 15px; }
-        .pill-name input { width: 100%; border: none; background: transparent; text-align: center; font-weight: 600; font-size: 1.1rem; color: #e67e22; outline: none; }
+        .pill-name input { width: 100%; border: none; background: transparent; text-align: center; font-weight: 600; font-size: 1.2rem; color: #e67e22; outline: none; }
         .pill-score { flex: 1; border-color: #e67e22; color: #e67e22; font-size: 1.6rem; }
         .pill-match { flex: 0.7; color: #1a237e; border-color: #1a237e; font-size: 1rem; flex-direction: column; }
+        
         .p2-score { background: #f39c12; color: white; border-color: #f39c12; }
         .p2-name { background: #f39c12; color: white; border-color: #f39c12; }
         .p2-name input { color: white; }
 
-        .btn-invert { background: #34495e; color: white; border: none; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; cursor: pointer; flex-shrink: 0; }
+        .btn-invert { background: #34495e; color: white; border: none; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; cursor: pointer; transition: 0.2s; margin: 0 5px; flex-shrink: 0; }
         .action-btns { display: flex; gap: 8px; margin-left: auto; }
+        
         .btn-reset { background: #95a5a6; color: white; border: none; height: 40px; padding: 0 15px; border-radius: 20px; font-weight: bold; cursor: pointer; }
-        .btn-remove { background: white; border: 2px solid #e74c3c; color: #e74c3c; width: 40px; height: 40px; border-radius: 50%; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-remove { background: white; border: 2px solid #e74c3c; color: #e74c3c; width: 40px; height: 40px; border-radius: 50%; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
 
+        /* STORICO CARD */
         .history-card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid #1a237e; }
     </style>
 </head>
@@ -86,10 +102,7 @@
             <h2 style="margin-bottom: 20px; color: #1a237e;">Direzione Gara</h2>
             <form onsubmit="eseguiLogin(event)">
                 <input type="email" id="email" class="login-input" placeholder="Email Utente" required>
-                <div class="pwd-container">
-                    <input type="password" id="pwd" class="login-input" placeholder="Password" required>
-                    <span class="pwd-toggle" onclick="togglePassword()">👁️</span>
-                </div>
+                <input type="password" id="pwd" class="login-input" placeholder="Password" required>
                 <button type="submit" class="btn-login">ACCEDI</button>
             </form>
         </div>
@@ -99,32 +112,30 @@
     <div id="dashboard-screen">
         <nav class="sidebar">
             <div class="logo-area">
-                <!-- Logo_App_Colorato.svg -->
-                <img src="Logo_App_Colorato.svg" alt="App Logo" style="width: 120px; height: auto; display: block; margin: 0 auto 10px auto;">
-    <h2>Direzione Gara</h2>
-    <div id="user-email-display" class="user-email"></div>
-    <div id="status-led" style="width:12px; height:12px; border-radius:50%; background:gray; margin:10px auto; border:2px solid #fff;"></div>
-</div>
+                <!-- LOGO CON PROPORZIONI CORRETTE[cite: 2] -->
+                <img src="Logo_App_Colorato.svg" alt="App Logo">
+                <h2>Direzione Gara</h2>
+                <div id="user-email-display" class="user-email"></div>
+                <div id="status-led" style="width:12px; height:12px; border-radius:50%; background:gray; margin:10px auto; border:2px solid #fff; box-shadow: 0 0 5px rgba(0,0,0,0.2);"></div>
+            </div>
             <div class="nav-menu">
-                <a class="nav-item active" onclick="cambiaScheda('biliardi')"><span>🕹️</span> Biliardi</a>
+                <a class="nav-item active" id="menu-biliardi" onclick="cambiaScheda('biliardi')"><span>🕹️</span> Biliardi</a>
                 <a class="nav-item" onclick="cambiaScheda('storico')"><span>🕒</span> Storico</a>
                 <a class="nav-item" style="margin-top: auto; color: #e74c3c;" onclick="eseguiLogout()"><span>🚪</span> Logout</a>
             </div>
         </nav>
 
         <main class="main-content">
-            <!-- SEZIONE BILIARDI -->
             <div id="sez-biliardi" class="tab-section active">
                 <div class="header">
                     <h1>Gestione Biliardi</h1>
                     <button class="btn-action-header btn-add" onclick="aggiungiTavolo()">➕ AGGIUNGI BILIARDO</button>
                 </div>
                 <div id="tables-container">
-                    <p style="text-align: center; color: #7f8c8d; padding: 40px;">Nessun biliardo collegato.</p>
+                    <p style="text-align: center; color: #7f8c8d; font-size: 1.2rem; margin-top: 50px;">Nessun biliardo collegato.</p>
                 </div>
             </div>
 
-            <!-- SEZIONE STORICO -->
             <div id="sez-storico" class="tab-section">
                 <div class="header">
                     <h1>Storico Partite</h1>
@@ -151,11 +162,6 @@
     let mieiTavoli = {}; 
     let tuttiITavoli = {}; 
     let rawStorico = {};
-
-    function togglePassword() {
-        const p = document.getElementById('pwd');
-        p.type = p.type === "password" ? "text" : "password";
-    }
 
     function eseguiLogin(e) {
         e.preventDefault();
@@ -187,23 +193,25 @@
         }
     });
 
+    // FUNZIONE SBLOCCATA
     function aggiungiTavolo() {
         if (!userId) return;
         if (typeof mieiTavoli !== 'object' || mieiTavoli === null) mieiTavoli = {};
 
         let id = prompt("Inserisci ID Tablet (es. TAVOLO-1234):", "TAVOLO-");
         if (id && id.trim() !== "" && id !== "TAVOLO-") {
-            db.ref('users/' + userId + '/miei_tavoli/' + id.trim()).set({
-                nome: id.trim(),
+            let cleanID = id.trim();
+            db.ref('users/' + userId + '/miei_tavoli/' + cleanID).set({
+                nome: cleanID,
                 ordine: Object.keys(mieiTavoli).length
-            }).then(() => alert("Collegato!")).catch(e => alert("Errore: " + e.message));
+            }).then(() => alert("Biliardo " + cleanID + " aggiunto!")).catch(e => alert("Errore: " + e.message));
         }
     }
 
     function disegnaTabellone() {
         const container = document.getElementById('tables-container');
         const ids = Object.keys(mieiTavoli).sort((a,b) => (mieiTavoli[a].ordine || 0) - (mieiTavoli[b].ordine || 0));
-        if(ids.length === 0) { container.innerHTML = '<p style="text-align:center; padding:40px;">Nessun biliardo collegato.</p>'; return; }
+        if(ids.length === 0) { container.innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 40px;">Nessun biliardo collegato.</p>'; return; }
         
         container.innerHTML = '';
         ids.forEach(mId => {
