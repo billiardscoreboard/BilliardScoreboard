@@ -5,12 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Direzione Gara - Biliardi</title>
 
-    <!-- Librerie Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
-    
-    <!-- Librerie per esportazione PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
@@ -18,31 +15,15 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f4f6f9; color: #333; overflow-x: hidden; display: flex; height: 100vh; }
         
-        /* LOGIN */
         #login-screen { position: absolute; top:0; left:0; width:100%; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #eef2f5; z-index: 1000;}
         .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
         .login-input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
         .btn-login { width: 100%; padding: 12px; background: #1a237e; color: white; border: none; border-radius: 6px; font-size: 1.1rem; cursor: pointer; font-weight: bold; margin-top: 10px;}
 
-        /* DASHBOARD SCREEN */
         #dashboard-screen { display: none; width: 100%; height: 100vh; }
-        
-        /* SIDEBAR */
         .sidebar { width: 280px; background: #ffffff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; box-shadow: 2px 0 5px rgba(0,0,0,0.02); z-index: 10; flex-shrink: 0; overflow-y: auto;}
         
-        .logo-area { 
-            padding: 30px 20px; 
-            text-align: center; 
-            border-bottom: 1px solid #e0e0e0; 
-        }
-
-        .logo-area svg { 
-            width: 80px; 
-            height: auto; 
-            display: block; 
-            margin: 0 auto 10px auto; 
-        }
-
+        .logo-area { padding: 30px 20px; text-align: center; border-bottom: 1px solid #e0e0e0; }
         .logo-area h2 { font-size: 1.2rem; color: #2c3e50; margin-top: 10px; }
         .user-email { font-size: 0.85rem; color: #7f8c8d; margin-top: 5px; word-break: break-all; font-weight: bold; }
         
@@ -50,18 +31,14 @@
         .nav-item { padding: 15px 25px; color: #34495e; text-decoration: none; font-weight: 600; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; border-left: 4px solid transparent; transition: 0.2s;}
         .nav-item:hover { background: #f8f9fa; }
         .nav-item.active { background: #f0f4f8; color: #1a237e; border-left: 4px solid #1a237e; }
-        .nav-item span { margin-right: 15px; font-size: 1.3rem; }
-
-        /* CONTENUTO */
+        
         .main-content { flex: 1; padding: 40px; overflow-y: auto; background: #f4f6f9; }
         .tab-section { display: none; }
         .tab-section.active { display: block; }
-
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .header h1 { color: #1a237e; font-size: 1.8rem; }
         .btn-add { background: #27ae60; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
-        /* TABELLE BILIARDI */
         .table-row { display: flex; align-items: center; background: white; padding: 15px 20px; border-radius: 50px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); gap: 10px; }
         .table-identity { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 140px; flex-shrink: 0; }
         .table-real-id { font-size: 0.65rem; color: #95a5a6; font-weight: bold; margin-bottom: 4px; text-transform: uppercase; }
@@ -87,7 +64,6 @@
 </head>
 <body>
 
-    <!-- LOGIN -->
     <div id="login-screen">
         <div class="login-box">
             <h2 style="margin-bottom: 20px; color: #1a237e;">Direzione Gara</h2>
@@ -99,28 +75,19 @@
         </div>
     </div>
 
-    <!-- DASHBOARD -->
     <div id="dashboard-screen">
         <nav class="sidebar">
             <div class="logo-area">
-                <!-- RIPRISTINO PALLA DA BILIARDO ORIGINALE[cite: 2] -->
-                <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                    <path d="m 206.69145,24.412639 h 18 l 15,4 14,7 11,9 8,10 8,16 3,13 3,65.000001 v 27 h 9 l 9,4 8,7 4,10 v 12 l -4,9 -5,6 -9,5 -5,1 h -9 l -1,8 -5,14 -7,13 -11,14 -13,11 -6,4 v 25 l 14,10 56,1 13,4 11,7 7,-18 16,-43 15,-41 10,-27 23,-62 15,-41 13,-35.000001 15,-40 4,-3 9,1 19,7 4,4 v 7 l -13,40 -40,120.000001 -14,43 -32,96 -14,43 -16,48 -1,38 -5,5 h -313 l -5,-5 v -102 l 3,-11 6,-12 9,-10 9,-7 12,-5 5,-1 56,-1 13,-10 h 2 l -1,-25 -13,-9 -12,-12 -9,-14 -6,-14 -3,-10 v -5 h -10 l -9,-3 -9,-8 -4,-8 -1,-11 3,-10 7,-8 8,-5 4,-1 h 9 l -1,-19 -7,-49 1,-13.000001 5,-15 7,-11 7,-8 13,-9 12,-5 17,-3 38,-16 z" fill="#010000"/>
-                    <path d="m 145.69145,148.41264 h 2 l 7,8 12,9 11,5 16,4 77,1 v 48 l -4,17 -8,16 -11,13 -11,9 -16,8 -17,4 h -19 l -14,-3 -12,-5 -12,-7 -13,-13 -9,-14 -5,-13 -2,-10 v -51 l 16,-8 8,-9 z" fill="#f3c99f"/>
-                    <path d="m 204.69145,40.412639 h 21 l 12,4 10,6 8,7 7,11 4,10 1,4 3,61.000001 v 16 h -78 l -13,-4 -12,-7 -7,-7 -7,-10 -5,-14 -2,-15 -4,-3.000001 -7,1.000001 -2,3 -1,37 -4,10 -8,7 -3,1 -1,-1 -7,-49 v -9.000001 l 4,-13 7,-11 9,-8 11,-5 8,-2 12,-2 34,-15 z" fill="#2c2310"/>
-                    <path d="m 425.69145,359.41264 h 13 l 16,4 13,7 12,11 7,10 5,12 2,10 v 16 l -4,15 -6,11 -9,11 -11,8 -13,6 -9,2 h -19 l -14,-4 -13,-7 -9,-8 -9,-13 -5,-12 -2,-10 v -15 l 3,-12 8,-16 9,-10 11,-8 11,-5 z"/>
-                    <path d="m 447.69145,84.412639 5,1 3,1 -1,7 -14,43.000001 -33,99 -14,43 -33,99 -5,16 -3,1 -17,-6 3,-10 15,-41 14,-38 16,-43 17,-46 18,-49 13,-35 15,-40.000001 z" fill="#c29948"/>
-                    <path d="m 75.69145,345.41264 h 6 v 23 h -8 l -6,-5 -1,-3 v -7 l 3,-5 z" fill="#f0c69a"/>
-                    <path d="m 286.69145,190.41264 9,1 5,5 1,9 -4,6 -4,2 h -7 z" fill="#f0c79b"/>
-                </svg>
+                <!-- ZERO CODICE GRAFICO. SOLO TESTO E PALLINA -->
+                <div style="font-size: 3.5rem; margin-bottom: 5px;">🎱</div>
                 <h2>Direzione Gara</h2>
                 <div id="user-email-display" class="user-email"></div>
                 <div id="status-led" style="width:12px; height:12px; border-radius:50%; background:gray; margin:10px auto; border:2px solid #fff;"></div>
             </div>
             <div class="nav-menu">
-                <a class="nav-item active" id="menu-biliardi" onclick="cambiaScheda('biliardi')"><span>🕹️</span> Biliardi</a>
-                <a class="nav-item" onclick="cambiaScheda('storico')"><span>🕒</span> Storico</a>
-                <a class="nav-item" style="margin-top: auto; color: #e74c3c;" onclick="eseguiLogout()"><span>🚪</span> Logout</a>
+                <a class="nav-item active" onclick="cambiaScheda('biliardi')">🕹️ Biliardi</a>
+                <a class="nav-item" onclick="cambiaScheda('storico')">🕒 Storico Partite</a>
+                <a class="nav-item" style="margin-top: auto; color: #e74c3c;" onclick="eseguiLogout()">🚪 Logout</a>
             </div>
         </nav>
 
