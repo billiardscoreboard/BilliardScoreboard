@@ -2,142 +2,196 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Billiard Scoreboard - OBS Overlay No VS</title>
+  <title>Billiard OBS Overlay</title>
+  
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@900&display=swap');
-
+    /* RESET E TRASPARENZA PER OBS */
+    * {
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
     body {
-      margin: 0;
-      padding: 0;
-      background: transparent;
-      font-family: 'Roboto', sans-serif;
+      /* Sfondo trasparente per far vedere la telecamera su OBS */
+      background: transparent; 
       overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      padding-top: 20px;
-    }
-
-    /* BARRA PRINCIPALE SOLIDA */
-    .scoreboard-container {
-      display: flex;
-      align-items: center;
-      background: #071f14; 
-      border: 3px solid #000;
-      border-radius: 10px;
-      padding: 10px 30px; 
       color: white;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-      gap: 40px; 
     }
 
-    .player-box {
+    /* BARRA PRINCIPALE DEL PUNTEGGIO */
+    .scoreboard-bar {
+      position: absolute;
+      top: 40px; /* Distanza dall'alto. Puoi cambiarlo in "bottom: 40px;" se la vuoi in basso */
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1400px; /* Larghezza ottimizzata per un canvas OBS a 1080p */
+      max-width: 96vw;
+      height: 70px;
       display: flex;
       align-items: center;
-      gap: 15px;
+      background: rgba(7, 31, 20, 0.95); /* Verde scuro elegante e semi-trasparente */
+      border: 3px solid #ffffff;
+      border-radius: 35px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
     }
 
-    .player-icon {
-      height: 50px;
-      width: auto;
-    }
-
-    .name {
-      font-size: 33.6px; 
-      text-transform: uppercase;
-      min-width: 150px;
-    }
-
-    /* PUNTEGGI - VERDE BOSCO */
-    .score {
-      font-size: 45px;
-      color: #fff;
-      background: #164d34; 
-      padding: 0 15px;
-      border-radius: 5px;
-      min-width: 60px;
-      text-align: center;
-    }
-
-    .sets {
-      font-size: 38.25px; /* Rimpicciolito del 15% (era 45px) */
-      background: #fff; 
-      color: #000;
-      width: 44.2px; /* Rimpicciolito del 15% (era 52px) */
-      height: 44.2px; /* Rimpicciolito del 15% (era 52px) */
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    /* IL SEGRETO: LOGO ASSOLUTO E INAMOVIBILE AL CENTRO */
+    .center-logo-container {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 110px;
+      height: 110px;
+      background: #0b2b1c;
+      border: 3px solid #ffffff;
       border-radius: 50%;
-      font-weight: bold;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
     }
 
-    /* LOGO CENTRALE */
-    .center-logo {
-      height: 65px; 
-      width: auto;
+    /* Inserisci qui l'immagine del tuo logo */
+    .center-logo-container img {
+      width: 70%;
+      height: auto;
     }
 
-    /* COLORI SPECIFICI P2 */
-    .p2-name { color: #facc15; }
-    .p2-score { color: #facc15 !important; }
-    .p2-sets { background: #facc15 !important; }
+    /* CONTENITORI DEI GIOCATORI (50% esatto dello spazio a testa) */
+    .player-side {
+      width: 50%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+    }
+
+    /* G1 spinge i testi verso il centro, G2 li spinge dall'altra parte */
+    .player-1 { justify-content: flex-end; padding-right: 70px; }
+    .player-2 { justify-content: flex-start; padding-left: 70px; }
+
+    /* NOMI GIOCATORI */
+    .player-name {
+      font-size: 32px;
+      font-weight: 800;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis; /* Aggiunge i puntini se il nome è troppo lungo */
+      flex-grow: 1;
+    }
+    .player-1 .player-name { text-align: right; color: #ffffff; }
+    .player-2 .player-name { text-align: left; color: #facc15; }
+
+    /* PUNTEGGI */
+    .player-score {
+      font-size: 52px;
+      font-weight: 900;
+      min-width: 80px;
+      text-align: center;
+      line-height: 1;
+    }
+    .player-1 .player-score { color: #ffffff; margin-left: 20px; }
+    .player-2 .player-score { color: #facc15; margin-right: 20px; }
+
+    /* INDICATORI DEI SET */
+    .player-set {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 28px;
+      font-weight: 900;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+    .player-1 .player-set { 
+      margin-right: 20px; 
+      background: #ffffff; 
+      color: #000000; 
+      border: 2px solid #ffffff; 
+    }
+    .player-2 .player-set { 
+      margin-left: 20px; 
+      background: #facc15; 
+      color: #000000; 
+      border: 2px solid #facc15; 
+    }
 
   </style>
 </head>
 <body>
 
-  <div class="scoreboard-container">
-    <div class="player-box">
-      <img src="Logo_Giocatore_Bianco.svg" class="player-icon" alt="P1 Icon">
-      <div id="name0" class="name">GIOCATORE 1</div>
-      <div id="st0" class="sets">0</div>
-      <div id="score0" class="score">0</div>
+  <div class="scoreboard-bar">
+    
+    <!-- LATO SINISTRO: GIOCATORE 1 -->
+    <div class="player-side player-1">
+      <div class="player-set" id="st0">0</div>
+      <div class="player-name" id="n0">GIOCATORE 1</div>
+      <div class="player-score" id="s0">0</div>
     </div>
 
-    <img src="Logo_App_Colorato.svg" class="center-logo" alt="App Logo">
-
-    <div class="player-box">
-      <div id="score1" class="score p2-score">0</div>
-      <div id="st1" class="sets p2-sets">0</div>
-      <div id="name1" class="name p2-name" style="text-align: right;">GIOCATORE 2</div>
-      <img src="Logo_Giocatore_Giallo.svg" class="player-icon" alt="P2 Icon">
+    <!-- LOGO CENTRALE BLOCCATO -->
+    <div class="center-logo-container">
+      <!-- Cambia il nome del file immagine se il tuo logo si chiama diversamente -->
+      <img src="Logo_App_Trasparente.svg" alt="Logo" />
     </div>
+
+    <!-- LATO DESTRO: GIOCATORE 2 -->
+    <div class="player-side player-2">
+      <div class="player-score" id="s1">0</div>
+      <div class="player-name" id="n1">GIOCATORE 2</div>
+      <div class="player-set" id="st1">0</div>
+    </div>
+
   </div>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyCKJs9TTf7wUipvOMWG-tgfzVlpIj0kmGk",
-    authDomain: "billiard-scoreboard-3cbb5.firebaseapp.com",
-    databaseURL: "https://billiard-scoreboard-3cbb5-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "billiard-scoreboard-3cbb5",
-    appId: "1:50403982389:web:57c2b0dbe03b4b47dec57c"
-  };
+  <script>
+    // Configurazione Firebase identica a quella del Tablet e della Dashboard
+    const firebaseConfig = { 
+      apiKey: "AIzaSyCKJs9TTf7wUipvOMWG-tgfzVlpIj0kmGk", 
+      authDomain: "billiard-scoreboard-3cbb5.firebaseapp.com", 
+      databaseURL: "https://billiard-scoreboard-3cbb5-default-rtdb.europe-west1.firebasedatabase.app", 
+      projectId: "billiard-scoreboard-3cbb5", 
+      appId: "1:50403982389:web:57c2b0dbe03b4b47dec57c" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+    // Cattura l'ID del tavolo direttamente dall'URL generato dal tablet (es. ?id=TAVOLO-1234)
+    const urlParams = new URLSearchParams(window.location.search);
+    const matchId = urlParams.get('id');
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const matchId = urlParams.get('id');
+    if(matchId) {
+      // Si mette in ascolto IN TEMPO REALE sui dati di questo tavolo
+      db.ref('matches/' + matchId).on('value', snap => {
+        const data = snap.val();
+        if(data) {
+          // Aggiorna Giocatore 1
+          document.getElementById('n0').innerText = data.n0 || "GIOCATORE 1";
+          document.getElementById('s0').innerText = data.s0 || 0;
+          document.getElementById('st0').innerText = data.st0 || 0;
 
-  if (matchId) {
-    const matchRef = db.ref('matches/' + matchId);
-    matchRef.on('value', (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        document.getElementById('name0').innerText = data.n0 || "GIOCATORE 1";
-        document.getElementById('name1').innerText = data.n1 || "GIOCATORE 2";
-        document.getElementById('score0').innerText = data.s0 || 0;
-        document.getElementById('score1').innerText = data.s1 || 0;
-        document.getElementById('st0').innerText = data.st0 || 0;
-        document.getElementById('st1').innerText = data.st1 || 0;
-      }
-    });
-  } else {
-    document.body.innerHTML = "<div style='color:white; background:red; padding:20px;'>ERRORE: ID TAVOLO MANCANTE</div>";
-  }
-</script>
+          // Aggiorna Giocatore 2
+          document.getElementById('n1').innerText = data.n1 || "GIOCATORE 2";
+          document.getElementById('s1').innerText = data.s1 || 0;
+          document.getElementById('st1').innerText = data.st1 || 0;
+        }
+      });
+    } else {
+      // Messaggio di errore se il link viene aperto senza ID del tavolo
+      document.body.innerHTML = "<h2 style='color:red; text-align:center; margin-top:50px; text-shadow: 2px 2px 4px #000;'>ERRORE: ID TAVOLO MANCANTE NELL'URL</h2>";
+    }
+  </script>
+
 </body>
 </html>
