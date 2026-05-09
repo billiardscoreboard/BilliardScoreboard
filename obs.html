@@ -20,26 +20,28 @@
       padding-top: 20px;
     }
 
-    /* BARRA PRINCIPALE SOLIDA */
+    /* CONTENITORE PRINCIPALE (Ora trasparente, mantiene solo l'allineamento) */
     .scoreboard-container {
       display: flex;
       align-items: center;
-      background: #071f14; 
-      border: 3px solid #000;
-      border-radius: 10px;
-      padding: 10px 30px; 
-      color: white;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
       gap: 40px; 
     }
 
-    /* CONTENITORI GIOCATORI */
+    /* CONTENITORI GIOCATORI INDIPENDENTI */
     .player-box {
       display: flex;
       align-items: center;
       gap: 15px;
       min-width: 460px; /* Larghezza base della tua grafica */
       white-space: nowrap; /* Impone ai nomi di NON andare a capo, spingendo in fuori la barra */
+      
+      /* Grafica spostata qui per renderli indipendenti */
+      background: #071f14; 
+      border: 3px solid #000;
+      border-radius: 10px;
+      padding: 10px 30px; 
+      color: white;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
     }
 
     /* G1 spinge i suoi elementi contro il logo. G2 spinge contro il logo */
@@ -84,11 +86,13 @@
       flex-shrink: 0;
     }
 
-    /* LOGO CENTRALE */
+    /* LOGO CENTRALE INDIPENDENTE */
     .center-logo {
       height: 65px; 
       width: auto;
       flex-shrink: 0;
+      /* Ombra aggiunta per coerenza visiva con i box */
+      filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5));
     }
 
     /* COLORI SPECIFICI P2 */
@@ -102,7 +106,6 @@
 
   <div class="scoreboard-container">
     
-    <!-- Aggiunto ID p1-box per la bilancia -->
     <div class="player-box" id="p1-box">
       <img src="Logo_Giocatore_Bianco.svg" class="player-icon" alt="P1 Icon">
       <div id="name0" class="name">GIOCATORE 1</div>
@@ -112,7 +115,6 @@
 
     <img src="Logo_App_Colorato.svg" class="center-logo" alt="App Logo">
 
-    <!-- Aggiunto ID p2-box per la bilancia -->
     <div class="player-box" id="p2-box">
       <div id="score1" class="score p2-score">0</div>
       <div id="st1" class="sets p2-sets">0</div>
