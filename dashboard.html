@@ -38,7 +38,7 @@
         
         /* LOGO CARICATO DA GITHUB */
         .logo-area { padding: 30px 20px; text-align: center; border-bottom: 1px solid #e0e0e0; }
-        .logo-area img { width: 190px; height: auto; display: block; margin: 0 auto 10px auto; object-fit: contain; }
+        .logo-area img { width: 120px; height: auto; display: block; margin: 0 auto 10px auto; object-fit: contain; }
         .logo-area h2 { font-size: 1.2rem; color: #2c3e50; margin-top: 10px; }
         .user-email { font-size: 0.85rem; color: #7f8c8d; margin-top: 5px; word-break: break-all; font-weight: bold; }
         
@@ -83,7 +83,7 @@
         .btn-add { background: #27ae60; }
         .btn-add:hover { background: #219150; }
 
-        /* --- DESIGN BILIARDI STILIZZATI (DIMENSIONI FISSE INGRANDITE DEL +20%) --- */
+        /* --- DESIGN BILIARDI STILIZZATI --- */
         #tables-container {
             display: flex;
             flex-wrap: wrap;
@@ -106,11 +106,12 @@
             height: 312px; /* +20% da 260px */
             flex-shrink: 0;
             cursor: grab;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s, filter 0.3s, opacity 0.3s;
             overflow: hidden;
         }
         .table-row:active { cursor: grabbing; }
         .table-row.dragging { opacity: 0.5; transform: scale(0.95); }
+        .table-row.offline { filter: grayscale(1) opacity(0.65); }
         
         /* FIX DRAG AND DROP: Impedisce agli elementi interni di rubare il drop */
         body.dragging-table .table-row * { pointer-events: none !important; }
@@ -123,16 +124,16 @@
         .delete-table-btn:hover { color: #e74c3c; transform: scale(1.2); }
 
         .table-name-input {
-            background: transparent; border: 1px dashed rgba(255,255,255,0.3); color: white; padding: 2px 5px; border-radius: 4px; font-weight: bold; font-size: 1.2rem; text-align: center; width: 80%; outline: none; transition: 0.2s; margin-top: 5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); cursor: pointer;
+            background: transparent; border: 1px dashed rgba(255,255,255,0.3); color: white; padding: 2px 5px; border-radius: 4px; font-weight: bold; font-size: 1.44rem; text-align: center; width: 80%; outline: none; transition: 0.2s; margin-top: 5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); cursor: pointer;
         }
         .table-name-input:focus { background: rgba(0,0,0,0.2); border-style: solid; cursor: text; }
 
         .player-name-input { 
-            background: transparent; border: none; color: white; text-align: center; font-weight: 600; font-size: 1.1rem; width: 100%; outline: none; border-bottom: 1px solid transparent; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); cursor: pointer;
+            background: transparent; border: none; color: white; text-align: center; font-weight: 600; font-size: 1.14rem; width: 100%; outline: none; border-bottom: 1px solid transparent; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); cursor: pointer;
         }
         .player-name-input:focus { border-bottom: 1px solid rgba(255,255,255,0.5); cursor: text; }
         
-        .score-display { font-size: 4rem; font-weight: 900; color: white; line-height: 1; text-shadow: 2px 2px 8px rgba(0,0,0,0.6); margin: 5px 0; }
+        .score-display { font-size: 5.28rem; font-weight: 900; color: white; line-height: 1; text-shadow: 2px 2px 8px rgba(0,0,0,0.6); margin: 5px 0; }
         
         .set-container { background: rgba(0,0,0,0.3); border-radius: 20px; padding: 5px 15px; color: white; cursor: pointer; user-select: none; margin-top: 5px; min-width: 80px; text-align: center; border: 1px solid rgba(255,255,255,0.2); transition: 0.2s;}
         .set-container:active { transform: scale(0.95); }
@@ -147,13 +148,16 @@
         /* TESTI G2 COLORE GIALLO */
         .p2-text, .score-display.p2-text, .set-container.p2-text { color: #f1c40f !important; }
 
+        .vs-label { color: rgba(255,255,255,0.8); font-weight: 900; font-size: 1.47rem; font-style: italic; margin-bottom: 5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+
         .btn-invert { background: rgba(0,0,0,0.5); color: white; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.4);}
         .btn-invert:hover { transform: scale(1.1); background: rgba(0,0,0,0.7); }
 
-        .btn-reset, .btn-termina { width: 40px; height: 40px; border-radius: 50%; border: none; font-size: 1.2rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
+        .btn-stream, .btn-reset, .btn-termina { width: 40px; height: 40px; border-radius: 50%; border: none; font-size: 1.2rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
+        .btn-stream { background: #8e44ad; color: white; }
         .btn-reset { background: #e74c3c; color: white; }
         .btn-termina { background: #f1c40f; color: #333; }
-        .btn-reset:hover, .btn-termina:hover { transform: scale(1.1); }
+        .btn-stream:hover, .btn-reset:hover, .btn-termina:hover { transform: scale(1.1); }
 
         /* --- SISTEMA TOOLTIP GLOBALE --- */
         [data-tooltip] { position: relative; }
@@ -196,14 +200,6 @@
         .nav-item-wrapper [data-tooltip]::after {
             left: auto;
             right: 0;
-            transform: none;
-        }
-        
-        /* Tooltip del Cestino spostato in basso a sinistra per non coprire cartelle contestuali */
-        #nav-folder-trash[data-tooltip]::after {
-            bottom: auto;
-            top: 125%;
-            left: 0;
             transform: none;
         }
 
@@ -685,6 +681,35 @@
     function rimuoviTavolo(matchId) {
         if(confirm(`Hai tenuto premuto per 3 secondi.\nVuoi davvero SCOLLEGARE questo tavolo dal tuo account?`)) { db.ref('users/' + userId + '/miei_tavoli/' + matchId).remove(); }
     }
+    
+    function toggleStreamingDashboard(matchId, currentState) {
+        const newState = !currentState;
+        db.ref('users/' + userId + '/miei_tavoli/' + matchId).update({ isStreaming: newState });
+
+        if (newState) {
+            db.ref('matches/' + matchId).update({ streamTrigger: true });
+        } else {
+            if (confirm("Sei sicuro di voler TERMINARE lo streaming? La partita in corso verrà archiviata e azzerata.")) {
+                const live = tuttiITavoli[matchId];
+                if (live) {
+                    const pt0 = parseInt(live.s0) || 0;
+                    const pt1 = parseInt(live.s1) || 0;
+                    if (pt0 > 0 || pt1 > 0) {
+                        if (pt0 > pt1) {
+                            const newSt0 = (parseInt(live.st0) || 0) + 1;
+                            db.ref('matches/' + matchId).update({ st0: newSt0 });
+                        } else if (pt1 > pt0) {
+                            const newSt1 = (parseInt(live.st1) || 0) + 1;
+                            db.ref('matches/' + matchId).update({ st1: newSt1 });
+                        }
+                    }
+                }
+                db.ref('matches/' + matchId).update({ forceArchive: true, forceLogout: true });
+            } else {
+                db.ref('users/' + userId + '/miei_tavoli/' + matchId).update({ isStreaming: true });
+            }
+        }
+    };
 
     function disegnaTabellone() {
         if (isDragging) return; 
@@ -723,6 +748,7 @@
         tavoliDelMioAccount.forEach((matchId, index) => {
             const dati = tuttiITavoli[matchId] || { n0: 'G1', n1: 'G2', s0: 0, s1: 0, st0: 0, st1: 0 };
             const nomeDaMostrare = mieiTavoli[matchId].nome || matchId;
+            const isStreaming = mieiTavoli[matchId].isStreaming === true;
 
             const isEditG1 = (editingSet.matchId === matchId && editingSet.player === 0);
             const isEditG2 = (editingSet.matchId === matchId && editingSet.player === 1);
@@ -752,18 +778,18 @@
                                 onkeyup="if(event.key === 'Enter') this.blur();">
                         </div>
                         
-                        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin: 10px 0;">
-                            <div style="display:flex; flex-direction:column; align-items:center; width:35%;">
-                                <div style="position:relative; width:100%; display:flex; flex-direction:column; align-items:center;">
+                        <div style="display:flex; justify-content:space-between; align-items:stretch; width:100%; margin: 10px 0 -5px 0; flex-grow: 1;">
+                            <div style="display:flex; flex-direction:column; align-items:center; width:35%; height: 100%;">
+                                <div style="position:relative; width:100%; display:flex; flex-direction:column; align-items:center; margin-bottom: auto;">
                                     <input type="text" class="player-name-input" id="n0-${matchId}" value="${dati.n0 || 'G1'}" 
                                         readonly title="Doppio click per modificare"
                                         ondblclick="this.removeAttribute('readonly'); this.defaultValue=this.value; this.value=''; this.focus();"
                                         onblur="this.setAttribute('readonly', true); if(this.value.trim() !== '') { aggiornaDatoTablet('${matchId}', 'n0', this.value); } else { this.value=this.defaultValue; }"
                                         onkeyup="if(event.key === 'Enter') this.blur();">
                                 </div>
-                                <div class="score-display" id="s0-${matchId}"></div>
+                                <div class="score-display" id="s0-${matchId}" style="margin: auto 0; transform: translateY(-5px);"></div>
                                 
-                                <div class="set-container" title="Tieni premuto 3 sec per modificare" onpointerdown="startSetEditTimer('${matchId}', 0)" onpointerup="cancelSetEditTimer()" onpointerleave="cancelSetEditTimer()">
+                                <div class="set-container" title="Tieni premuto 3 sec per modificare" onpointerdown="startSetEditTimer('${matchId}', 0)" onpointerup="cancelSetEditTimer()" onpointerleave="cancelSetEditTimer()" style="margin-top: auto; margin-bottom: 5px;">
                                     <div class="set-display" id="set-display-0-${matchId}" style="display:${disp0};"><span id="st0-${matchId}"></span><small>Set</small></div>
                                     <div class="set-edit" id="set-edit-0-${matchId}" style="display:${edit0};">
                                         <button class="btn-set-mod" onpointerdown="modificaSetDashboard('${matchId}', 0, -1); event.stopPropagation();">-</button>
@@ -774,27 +800,34 @@
                                 </div>
                             </div>
 
-                            <div style="display:flex; flex-direction:column; align-items:center; justify-content:flex-end; align-self:stretch; width:30%;">
-                                <div style="flex-grow:1; display:flex; align-items:center; justify-content:center;">
+                            <div style="display:flex; flex-direction:column; align-items:center; width:30%; height: 100%;">
+                                <div class="vs-label" style="margin-bottom: auto;">Vs</div>
+                                <div style="display:flex; align-items:center; justify-content:center; margin: auto 0; transform: translateY(-5px);">
                                     <button class="btn-invert" data-tooltip="Inverti Giocatori" onclick="invertiGiocatoriDashboard('${matchId}')">⇄</button>
                                 </div>
-                                <div style="display:flex; gap:10px;">
+                                <div style="display:flex; gap:10px; margin-top: auto; margin-bottom: 5px;">
+                                    <button id="btn-stream-${matchId}" class="btn-stream" style="background: ${isStreaming ? '#27ae60' : '#333'};" data-tooltip="${isStreaming ? 'OFF' : 'ON'}" onclick="toggleStreamingDashboard('${matchId}', ${isStreaming})">
+                                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                                            <line x1="12" y1="2" x2="12" y2="12"></line>
+                                        </svg>
+                                    </button>
                                     <button class="btn-reset" data-tooltip="Azzera Partita" onclick="azzeraTavoloSolo('${matchId}')">🔄</button>
                                     <button class="btn-termina" data-tooltip="Termina partita e salva nello storico" onclick="terminaESalvaTavolo('${matchId}')">💾</button>
                                 </div>
                             </div>
 
-                            <div style="display:flex; flex-direction:column; align-items:center; width:35%;">
-                                <div style="position:relative; width:100%; display:flex; flex-direction:column; align-items:center;">
+                            <div style="display:flex; flex-direction:column; align-items:center; width:35%; height: 100%;">
+                                <div style="position:relative; width:100%; display:flex; flex-direction:column; align-items:center; margin-bottom: auto;">
                                     <input type="text" class="player-name-input p2-text" id="n1-${matchId}" value="${dati.n1 || 'G2'}" 
                                         readonly title="Doppio click per modificare"
                                         ondblclick="this.removeAttribute('readonly'); this.defaultValue=this.value; this.value=''; this.focus();"
                                         onblur="this.setAttribute('readonly', true); if(this.value.trim() !== '') { aggiornaDatoTablet('${matchId}', 'n1', this.value); } else { this.value=this.defaultValue; }"
                                         onkeyup="if(event.key === 'Enter') this.blur();">
                                 </div>
-                                <div class="score-display p2-text" id="s1-${matchId}"></div>
+                                <div class="score-display p2-text" id="s1-${matchId}" style="margin: auto 0; transform: translateY(-5px);"></div>
                                 
-                                <div class="set-container p2-text" title="Tieni premuto 3 sec per modificare" onpointerdown="startSetEditTimer('${matchId}', 1)" onpointerup="cancelSetEditTimer()" onpointerleave="cancelSetEditTimer()">
+                                <div class="set-container p2-text" title="Tieni premuto 3 sec per modificare" onpointerdown="startSetEditTimer('${matchId}', 1)" onpointerup="cancelSetEditTimer()" onpointerleave="cancelSetEditTimer()" style="margin-top: auto; margin-bottom: 5px;">
                                     <div class="set-display" id="set-display-1-${matchId}" style="display:${disp1};"><span id="st1-${matchId}"></span><small>Set</small></div>
                                     <div class="set-edit" id="set-edit-1-${matchId}" style="display:${edit1};">
                                         <button class="btn-set-mod" onpointerdown="modificaSetDashboard('${matchId}', 1, -1); event.stopPropagation();">-</button>
@@ -810,6 +843,19 @@
                 container.appendChild(row);
             } 
             
+            let btnStream = document.getElementById(`btn-stream-${matchId}`);
+            if (btnStream) {
+                btnStream.style.background = isStreaming ? '#27ae60' : '#333';
+                btnStream.setAttribute('data-tooltip', isStreaming ? 'OFF' : 'ON');
+                btnStream.onclick = () => toggleStreamingDashboard(matchId, isStreaming);
+            }
+
+            if (isStreaming) {
+                row.classList.remove('offline');
+            } else {
+                row.classList.add('offline');
+            }
+
             let inputNomeTavolo = document.getElementById(`tname-${matchId}`); 
             if (inputNomeTavolo && document.activeElement !== inputNomeTavolo) inputNomeTavolo.value = nomeDaMostrare;
             
