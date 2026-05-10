@@ -32,35 +32,30 @@
       display: flex;
       align-items: center;
       gap: 15px;
-      min-width: 460px; /* Larghezza base della tua grafica */
-      white-space: nowrap; /* Impone ai nomi di NON andare a capo, spingendo in fuori la barra */
+      min-width: 460px; /* Larghezza minima */
       
-      /* Grafica spostata qui per renderli indipendenti */
+      /* Grafica */
       background: #071f14; 
       border: 3px solid #000;
       border-radius: 10px;
       padding: 10px 30px; 
       color: white;
       box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+      transition: width 0.3s ease; /* Transizione fluida per l'adattività */
     }
-
-    /* G1 spinge i suoi elementi contro il logo. G2 spinge contro il logo */
-    #p1-box { justify-content: flex-end; }
-    #p2-box { justify-content: flex-start; }
-
-    #p1-box .name { margin-right: auto; }
-    #p2-box .name { margin-left: auto; }
 
     .player-icon {
       height: 50px;
       width: auto;
-      flex-shrink: 0; /* Impedisce all'icona di deformarsi */
+      flex-shrink: 0; 
     }
 
     .name {
       font-size: 33.6px; 
       text-transform: uppercase;
-      min-width: 150px;
+      flex: 1; /* Occupa lo spazio centrale */
+      text-align: center; /* Centra il testo nel suo spazio */
+      white-space: nowrap; /* Impedisce al nome di andare a capo per forzare l'allargamento della casella */
     }
 
     /* PUNTEGGI - VERDE BOSCO */
@@ -94,8 +89,7 @@
       height: 220px; 
       width: auto;
       flex-shrink: 0;
-      margin-bottom: 40px; /*
-      /* Ombra aggiunta per coerenza visiva con i box */
+      margin-bottom: 40px;
       filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5));
     }
 
@@ -122,7 +116,7 @@
     <div class="player-box" id="p2-box">
       <div id="score1" class="score p2-score">0</div>
       <div id="st1" class="sets p2-sets">0</div>
-      <div id="name1" class="name p2-name" style="text-align: right;">GIOCATORE 2</div>
+      <div id="name1" class="name p2-name">GIOCATORE 2</div>
       <img src="Logo_Giocatore_Giallo.svg" class="player-icon" alt="P2 Icon">
     </div>
 
@@ -156,23 +150,19 @@
         document.getElementById('st1').innerText = data.st1 || 0;
 
         // --- TRUCCO DELLA BILANCIA SIMMETRICA ---
-        // Quando arriva un aggiornamento, calcola quale lato pesa di più e rende l'altro identico.
+        // Adatta la larghezza delle caselle in base al contenuto più lungo
         setTimeout(() => {
           const p1 = document.getElementById('p1-box');
           const p2 = document.getElementById('p2-box');
           
-          // Sblocca la larghezza per misurare il reale ingombro dei testi
           p1.style.width = 'auto';
           p2.style.width = 'auto';
           
-          // Misura i pixel occupati da entrambi i lati
           const w1 = p1.scrollWidth;
           const w2 = p2.scrollWidth;
           
-          // Trova il più largo dei due (partendo sempre da una base di 460px)
           const maxW = Math.max(w1, w2, 460); 
           
-          // Impone la larghezza vincente ad entrambi i lati: barra simmetrica, logo al centro.
           p1.style.width = maxW + 'px';
           p2.style.width = maxW + 'px';
         }, 10);
