@@ -1347,13 +1347,26 @@
 
                 let st0 = Number(partita.set1) || 0; let st1 = Number(partita.set2) || 0;
                 let s0 = 0, s1 = 0, l0 = [], l1 = [];
+                let bufferSets = [];
 
                 if (partita.setsDettaglio && partita.setsDettaglio.length > 0) {
                     let ultimoSet = partita.setsDettaglio[partita.setsDettaglio.length - 1];
                     s0 = Number(ultimoSet.s0) || 0; s1 = Number(ultimoSet.s1) || 0;
-                    l0 = ultimoSet.l0 || []; l1 = ultimoSet.l1 || [];
+                    l0 = ultimoSet.l0 ? (Array.isArray(ultimoSet.l0) ? ultimoSet.l0 : Object.values(ultimoSet.l0)) : [];
+                    l1 = ultimoSet.l1 ? (Array.isArray(ultimoSet.l1) ? ultimoSet.l1 : Object.values(ultimoSet.l1)) : [];
                     
                     if (s0 > s1 && st0 > 0) st0--; else if (s1 > s0 && st1 > 0) st1--;
+
+                    // Recupero storico set precedenti per il buffer
+                    for (let i = 0; i < partita.setsDettaglio.length - 1; i++) {
+                        let s = partita.setsDettaglio[i];
+                        bufferSets.push({
+                            s0: s.s0 || 0,
+                            s1: s.s1 || 0,
+                            l0: s.l0 ? (Array.isArray(s.l0) ? s.l0 : Object.values(s.l0)) : [],
+                            l1: s.l1 ? (Array.isArray(s.l1) ? s.l1 : Object.values(s.l1)) : []
+                        });
+                    }
                 }
 
                 const updates = {
@@ -1368,7 +1381,25 @@
                     }
                 });
 
-                db.ref(`users/${userId}/match_buffers/${matchId}`).remove();
+                // Ricostruiamo il buffer invece di eliminarlo, così i set precedenti non vanno persi
+                let restoredBuffer = {
+                    n0: partita.nome1 || "GIOCATORE 1",
+                    n1: partita.nome2 || "GIOCATORE 2",
+                    originalN0: partita.nome1 || "GIOCATORE 1",
+                    originalN1: partita.nome2 || "GIOCATORE 2",
+                    startTime: partita.data || new Date().toLocaleString('it-IT'),
+                    sets: bufferSets,
+                    lastSt0: st0,
+                    lastSt1: st1,
+                    maxS0: s0,
+                    maxS1: s1,
+                    maxL0: l0,
+                    maxL1: l1,
+                    currentS0: s0,
+                    currentS1: s1
+                };
+                db.ref(`users/${userId}/match_buffers/${matchId}`).set(restoredBuffer);
+
                 db.ref('matches/' + matchId).update(updates).then(() => {
                     showModal('confirm', "Partita ripristinata sul tavolo!\nVuoi eliminarla dallo storico per evitare doppioni?", (resDel) => {
                         if (resDel) {
