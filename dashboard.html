@@ -1047,6 +1047,22 @@
         }
     }
 
+    function svuotaStorico() {
+        let msg = currentFolderView === 'root' ? "Sei sicuro di voler SVUOTARE LO STORICO PRINCIPALE?\nTutte le partite verranno spostate nel Cestino." : `Sei sicuro di voler SVUOTARE LA CARTELLA attuale?\nTutte le partite verranno spostate nel Cestino.`;
+        showModal('confirm', msg, (res) => {
+            if(res) {
+                let updates = {};
+                Object.keys(rawStorico).forEach(k => {
+                    let fId = rawStorico[k].folderId || 'root';
+                    if(fId === currentFolderView) {
+                        updates[k + '/folderId'] = 'trash';
+                    }
+                });
+                if(Object.keys(updates).length > 0) db.ref('users/' + userId + '/storico').update(updates);
+            }
+        });
+    }
+
     function avviaAscoltoStorico() {
         db.ref('users/' + userId + '/storico').off();
         db.ref('users/' + userId + '/storico_folders').off();
