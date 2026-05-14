@@ -34,7 +34,8 @@
         #dashboard-screen { display: none; width: 100%; height: 100vh; }
         
         /* SIDEBAR LATERALE */
-        .sidebar { width: 280px; background: #ffffff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; box-shadow: 2px 0 5px rgba(0,0,0,0.02); z-index: 10; flex-shrink: 0; overflow-y: auto;}
+        .sidebar { width: 280px; background: #ffffff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; box-shadow: 2px 0 5px rgba(0,0,0,0.02); z-index: 10; flex-shrink: 0; overflow-y: auto; transition: margin-left 0.3s ease;}
+        .sidebar.collapsed { margin-left: -280px; }
         
         /* LOGO CARICATO DA GITHUB */
         .logo-area { padding: 30px 20px; text-align: center; border-bottom: 1px solid #e0e0e0; }
@@ -60,7 +61,6 @@
         .nav-sub-item.active { background: #e8eaf6; color: #1a237e; border-left-color: #1a237e; font-weight: 600;}
         .nav-sub-item.drag-over, .nav-item-wrapper.drag-over .nav-item { background: #d4efdf; border-left-color: #27ae60; color: #27ae60;}
         
-        /* ICONA CARTELLE E NOME (RESI STATICI) */
         .nav-sub-item span.f-icon { margin-right: 10px; font-size: 1.1rem; }
         .nav-sub-item span.f-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 40px; }
         
@@ -78,159 +78,113 @@
         .header h1 { color: #1a237e; font-size: 1.8rem; }
         .header-btns { display: flex; gap: 15px; }
         
-        /* TASTI GENERICI HEADER */
         .btn-action-header { color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .btn-add { background: #27ae60; }
         .btn-add:hover { background: #219150; }
 
-        /* --- DESIGN BILIARDI STILIZZATI --- */
+        /* --- DESIGN BILIARDI STILIZZATI (-15% RIDOTTI) --- */
         #tables-container {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, 680px);
             justify-content: center;
             gap: 30px;
             margin-top: 20px;
         }
 
         .table-row {
-            background-color: #2e8b57; /* Panno verde */
-            border: 18px solid #8e5e2d; /* Sponda color legno */
-            border-radius: 14px; /* Angoli arrotondati del tavolo */
-            box-shadow: inset 0 0 30px rgba(0,0,0,0.4), 0 10px 20px rgba(0,0,0,0.3);
+            background-color: #2e8b57; /* SEMPRE COLORATO */
+            border: 19px solid #8e5e2d; 
+            border-radius: 14px; 
+            box-shadow: inset 0 0 31px rgba(0,0,0,0.4), 0 10px 20px rgba(0,0,0,0.3);
             position: relative;
-            padding: 15px;
+            padding: 17px;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            width: 552px;  /* +20% da 460px */
-            height: 312px; /* +20% da 260px */
+            justify-content: space-between;
+            width: 680px;  
+            height: 348px; 
             flex-shrink: 0;
             cursor: grab;
-            transition: transform 0.2s, box-shadow 0.2s, filter 0.3s, opacity 0.3s;
+            transition: transform 0.2s, box-shadow 0.2s;
             overflow: hidden;
         }
         .table-row:active { cursor: grabbing; }
         .table-row.dragging { opacity: 0.5; transform: scale(0.95); }
-        .table-row.offline { filter: grayscale(1) opacity(0.65); }
         
-        /* FIX DRAG AND DROP: Impedisce agli elementi interni di rubare il drop */
         body.dragging-table .table-row * { pointer-events: none !important; }
 
-        /* ELEMENTI INTERNI AL TAVOLO */
-        .drag-handle { position: absolute; top: 5px; left: 10px; color: rgba(255,255,255,0.5); font-size: 1.5rem; transition: 0.2s; z-index: 10; }
+        .drag-handle { position: absolute; top: 7px; left: 12px; color: rgba(255,255,255,0.5); font-size: 1.5rem; transition: 0.2s; z-index: 10; }
         .drag-handle:hover { color: #fff; }
 
-        .delete-table-btn { position: absolute; top: 5px; right: 10px; color: rgba(255,255,255,0.5); font-size: 1.2rem; cursor: pointer; transition: 0.2s; z-index: 10; }
+        .delete-table-btn { position: absolute; top: 7px; right: 12px; color: rgba(255,255,255,0.5); font-size: 1.25rem; cursor: pointer; transition: 0.2s; z-index: 10; }
         .delete-table-btn:hover { color: #e74c3c; transform: scale(1.2); }
 
         .table-name-input {
-            background: transparent; border: 1px dashed rgba(255,255,255,0.3); color: white; padding: 2px 5px; border-radius: 4px; font-weight: bold; font-size: 1.44rem; text-align: center; width: 80%; outline: none; transition: 0.2s; margin-top: 5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); cursor: pointer;
+            background: transparent; border: 1px dashed rgba(255,255,255,0.3); color: white; border-radius: 5px; font-weight: bold; font-size: 1.45rem; text-align: center; width: 48%; outline: none; transition: 0.2s; margin-top: 5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); cursor: pointer;
+            padding: 7px 8px; margin-left: auto; margin-right: auto; display: block;
         }
         .table-name-input:focus { background: rgba(0,0,0,0.2); border-style: solid; cursor: text; }
 
         .player-name-input { 
-            background: transparent; border: none; color: white; text-align: center; font-weight: 600; font-size: 1.14rem; width: 100%; outline: none; border-bottom: 1px solid transparent; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); cursor: pointer;
+            background: rgba(0,0,0,0.15); border: 1px dashed rgba(255,255,255,0.3); color: white; text-align: center; font-weight: 800; font-size: 1.45rem; width: 100%; outline: none; border-radius: 7px; cursor: pointer; padding: 10px 4px; transition: 0.2s; text-shadow: 1px 1px 4px rgba(0,0,0,0.5);
         }
-        .player-name-input:focus { border-bottom: 1px solid rgba(255,255,255,0.5); cursor: text; }
+        .player-name-input:hover { background: rgba(0,0,0,0.25); border-color: rgba(255,255,255,0.5); }
+        .player-name-input:focus { border-style: solid; background: rgba(0,0,0,0.35); cursor: text; }
         
-        .score-display { font-size: 5.28rem; font-weight: 900; color: white; line-height: 1; text-shadow: 2px 2px 8px rgba(0,0,0,0.6); margin: 5px 0; }
+        .score-display { font-size: 5.5rem; font-weight: 900; color: white; line-height: 1; text-shadow: 2px 2px 8px rgba(0,0,0,0.6); margin: 4px 0; }
         
-        /* CASELLE SET INGRANDITE DEL +10% */
-        .set-container { background: rgba(0,0,0,0.3); border-radius: 22px; padding: 5.5px 16.5px; color: white; cursor: pointer; user-select: none; margin-top: 5px; min-width: 88px; text-align: center; border: 1px solid rgba(255,255,255,0.2); transition: 0.2s;}
+        .set-container { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 4px 12px; color: white; cursor: pointer; user-select: none; margin: 5px auto 0 auto; width: max-content; min-width: 34px; text-align: center; border: 1px solid rgba(255,255,255,0.2); transition: 0.2s;}
         .set-container:active { transform: scale(0.95); }
-        .set-display { display: flex; align-items: baseline; justify-content: center; gap: 5.5px; }
-        .set-display span { font-size: 1.54rem; font-weight: bold; }
-        .set-display small { font-size: 0.77rem; opacity: 0.8; text-transform: uppercase; }
-        .set-edit { display: flex; align-items: center; justify-content: center; gap: 5.5px; }
-        .btn-set-mod { background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 50%; width: 24.2px; height: 24.2px; font-weight: bold; cursor: pointer; }
+        .set-display { display: flex; align-items: baseline; justify-content: center; gap: 3px; }
+        .set-display span { font-size: 2rem; font-weight: bold; }
+        .set-display small { font-size: 0.8rem; opacity: 0.8; text-transform: uppercase; }
+        
+        .set-edit { display: flex; align-items: center; justify-content: center; gap: 3px; }
+        .btn-set-mod { background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; font-size: 1.2rem; cursor: pointer; }
         .btn-set-mod:hover { background: rgba(255,255,255,0.4); }
-        .btn-set-ok { background: #27ae60; color: white; border: none; border-radius: 4.4px; font-size: 0.77rem; padding: 2.2px 6.6px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        .btn-set-ok { background: #27ae60; color: white; border: none; border-radius: 3px; font-size: 0.7rem; padding: 2px 5px; cursor: pointer; font-weight: bold; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
 
-        /* TESTI G2 COLORE GIALLO */
         .p2-text, .score-display.p2-text, .set-container.p2-text { color: #f1c40f !important; }
 
-        .vs-label { color: rgba(255,255,255,0.8); font-weight: 900; font-size: 1.47rem; font-style: italic; margin-bottom: 5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+        .vs-label { color: rgba(255,255,255,0.8); font-weight: 900; font-size: 1.45rem; font-style: italic; margin-bottom: 8px; }
 
-        .btn-invert { background: #8e44ad; color: white; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.4);}
+        .btn-invert { background: #8e44ad; color: white; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; box-shadow: 0 3px 8px rgba(0,0,0,0.4);}
         .btn-invert:hover { transform: scale(1.1); background: #732d91; }
 
-        .btn-stream, .btn-reset, .btn-termina { width: 40px; height: 40px; border-radius: 50%; border: none; font-size: 1.2rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
+        .btn-reset, .btn-termina { border: none; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 8px rgba(0,0,0,0.4); width: 42px; height: 42px; border-radius: 50%; font-size: 1.25rem; }
         .btn-reset { background: #e67e22; color: white; }
         .btn-termina { background: #27ae60; color: white; }
-        .btn-stream:hover, .btn-reset:hover, .btn-termina:hover { transform: scale(1.1); }
+        
+        .btn-reset:hover, .btn-termina:hover { transform: scale(1.1); }
 
-        /* --- SISTEMA TOOLTIP GLOBALE --- */
+        /* TOOLTIP */
         [data-tooltip] { position: relative; }
         [data-tooltip]::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #2c3e50;
-            color: white;
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-size: 0.66rem; 
-            font-weight: normal;
-            white-space: normal; /* PERMETTE DI ANDARE A CAPO */
-            width: max-content;
-            max-width: 160px; /* LIMITA LA LARGHEZZA, CREANDO UN BOX COMPATTO */
-            text-align: center;
-            line-height: 1.3;
-            opacity: 0;
-            visibility: hidden;
-            transition: 0.2s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            z-index: 10000;
-            pointer-events: none;
+            content: attr(data-tooltip); position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%); background: #2c3e50; color: white; padding: 8px 14px; border-radius: 8px; font-size: 0.7rem; width: max-content; opacity: 0; visibility: hidden; transition: 0.2s; z-index: 10000; pointer-events: none;
         }
-        [data-tooltip]:hover::after {
-            opacity: 1;
-            visibility: visible;
-        }
+        [data-tooltip]:hover::after { opacity: 1; visibility: visible; }
+        .nav-sub-item:hover, .nav-item-wrapper:hover { z-index: 100; }
+        .history-card-actions [data-tooltip]::after, .nav-item-wrapper [data-tooltip]::after { left: auto; right: 0; transform: none; }
 
-        /* Eleviamo l'elemento del menu quando hoverato per evitare che il tooltip finisca dietro ad altri elementi */
-        .nav-sub-item:hover, .nav-item-wrapper:hover {
-            z-index: 100;
-        }
-
-        /* OVERRIDE TOOLTIP PER GLI ELEMENTI LATERALI E A DESTRA (Evita che escano dallo schermo) */
-        .history-card-actions [data-tooltip]::after,
-        .nav-item-wrapper [data-tooltip]::after {
-            left: auto;
-            right: 0;
-            transform: none;
-        }
-
-        /* TASTI AZIONE DASHBOARD */
+        /* TASTI AZIONE DASHBOARD / STORICO */
         .action-btns { display: flex; gap: 10px; margin-left: auto; align-items: center; }
-        
-        /* DESIGN STORICO MATCH CARDS */
         .history-card { position: relative; background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid #1a237e; cursor: grab; transition: transform 0.1s;}
         .history-card:active { cursor: grabbing; }
         .history-card.dragging { opacity: 0.5; transform: scale(0.98); border: 2px dashed #1a237e; }
-        
         .history-date { font-size: 0.9rem; color: #7f8c8d; margin-bottom: 8px; font-weight: bold;}
         .history-result { font-size: 1.3rem; font-weight: bold; color: #2c3e50; }
         .winner { color: #27ae60; }
         .loser { color: #e74c3c; }
-
-        /* Tasti Storico e Dropdown Sposta in */
         .history-card-actions { position: absolute; top: 15px; right: 15px; display: flex; align-items: center; gap: 10px; }
         .btn-history-action { background: none; border: none; font-size: 1.4rem; cursor: pointer; transition: 0.2s; opacity: 0.6; padding: 0;}
         .btn-history-action:hover { opacity: 1; transform: scale(1.1); }
-        
         .sposta-in-select { background: #f8f9fa; border: 1px solid #bdc3c7; border-radius: 6px; padding: 4px 8px; font-size: 0.9rem; color: #2c3e50; cursor: pointer; outline: none; transition: 0.2s; font-weight: bold;}
         .sposta-in-select:hover { border-color: #3498db; }
-
         .history-logs-toggle { margin-top: 15px; font-size: 0.85rem; color: #1a237e; cursor: pointer; font-weight: bold; display: inline-block; padding: 6px 12px; background: #e8eaf6; border-radius: 6px; transition: 0.2s; user-select: none; }
         .history-logs-toggle:hover { background: #c5cae9; }
-        
         .sets-wrapper { display: none; flex-direction: column; gap: 15px; margin-top: 15px; }
         .set-block { border: 1px solid #cfd8dc; border-radius: 8px; overflow: hidden; background: #f4f6f9; }
         .set-title { background: #e8eaf6; padding: 10px 15px; font-weight: bold; color: #1a237e; border-bottom: 1px solid #cfd8dc; text-align: center; font-size: 1.1rem; }
-        
         .history-logs-container { display: flex; gap: 20px; padding: 15px; }
         .log-col { flex: 1; display: flex; flex-direction: column; }
         .log-col strong { text-align: center; margin-bottom: 8px; color: #34495e; font-size: 1rem; border-bottom: 2px solid #bdc3c7; padding-bottom: 5px; text-transform: uppercase;}
@@ -241,8 +195,6 @@
         .tiro-val.minus { color: #e74c3c; font-weight: bold; }
 
         /* --- STILE SIDEBAR A SCOMPARSA --- */
-        .sidebar { transition: margin-left 0.3s ease; }
-        .sidebar.collapsed { margin-left: -280px; }
         #toggle-menu-btn {
             position: fixed; left: 280px; top: 20px; z-index: 1001;
             background: #1a237e; color: white; border: none; border-radius: 0 5px 5px 0;
@@ -319,7 +271,7 @@
             </div>
         </nav>
 
-        <button id="toggle-menu-btn" onclick="toggleSidebar()">❮</button>
+        <button id="toggle-menu-btn" onclick="toggleSidebar()" style="display:none;">❮</button>
 
         <main class="main-content">
             
@@ -434,6 +386,7 @@
     let mieiTavoli = {}; 
     let tuttiITavoli = {}; 
     let matchBuffers = {}; 
+    let backupTavoli = {}; 
 
     let removeTimer = null;
     let isDragging = false; 
@@ -714,19 +667,30 @@
         }
     }
 
+    // --- FUNZIONI PER L'EDIT DEI SET ---
     function startSetEditTimer(matchId, player) {
         if (editingSet.matchId === matchId && editingSet.player === player) return;
         setEditTimer = setTimeout(() => { editingSet = { matchId, player }; disegnaTabellone(); }, 3000);
     }
-    function cancelSetEditTimer() { if (setEditTimer) { clearTimeout(setEditTimer); setEditTimer = null; } }
-    function closeSetEdit() { editingSet = { matchId: null, player: null }; disegnaTabellone(); }
+    
+    function cancelSetEditTimer() { 
+        if (setEditTimer) { clearTimeout(setEditTimer); setEditTimer = null; } 
+    }
+    
+    function closeSetEdit() { 
+        editingSet = { matchId: null, player: null }; disegnaTabellone(); 
+    }
+    
     function modificaSetDashboard(matchId, player, delta) {
-        const data = tuttiITavoli[matchId]; if (!data) return;
+        const data = tuttiITavoli[matchId]; 
+        if (!data) return;
         const key = player === 0 ? 'st0' : 'st1';
         let val = parseInt(data[key]) || 0;
-        val += delta; if (val < 0) val = 0;
+        val += delta; 
+        if (val < 0) val = 0;
         db.ref('matches/' + matchId).update({ [key]: val });
     }
+    // -----------------------------------
 
     function startRemoveTimer(matchId) { removeTimer = setTimeout(() => { rimuoviTavolo(matchId); }, 3000); }
     function cancelRemoveTimer() { if (removeTimer) { clearTimeout(removeTimer); removeTimer = null; } }
@@ -736,42 +700,6 @@
             if(res) { db.ref('users/' + userId + '/miei_tavoli/' + matchId).remove(); }
         });
     }
-    
-    window.toggleStreamingDashboard = function(matchId, currentState) {
-        const newState = !currentState;
-        
-        if (newState) {
-            showModal('confirm', "Attivando lo streaming su questo segnapunti, i dati attualmente presenti sul tablet verranno sovrascritti con i dati presenti sulla dashboard, Continuare?", (res) => {
-                if (res) {
-                    db.ref('users/' + userId + '/miei_tavoli/' + matchId).update({ isStreaming: true });
-                    db.ref('matches/' + matchId).update({ streamTrigger: true });
-                }
-            });
-        } else {
-            showModal('confirm', "Sei sicuro di voler TERMINARE lo streaming? La partita in corso verrà archiviata e azzerata.", (res) => {
-                if (res) {
-                    const live = tuttiITavoli[matchId];
-                    if (live) {
-                        const pt0 = parseInt(live.s0) || 0;
-                        const pt1 = parseInt(live.s1) || 0;
-                        if (pt0 > 0 || pt1 > 0) {
-                            if (pt0 > pt1) {
-                                const newSt0 = (parseInt(live.st0) || 0) + 1;
-                                db.ref('matches/' + matchId).update({ st0: newSt0 });
-                            } else if (pt1 > pt0) {
-                                const newSt1 = (parseInt(live.st1) || 0) + 1;
-                                db.ref('matches/' + matchId).update({ st1: newSt1 });
-                            }
-                        }
-                    }
-                    db.ref('matches/' + matchId).update({ forceArchive: true, forceLogout: true });
-                    db.ref('users/' + userId + '/miei_tavoli/' + matchId).update({ isStreaming: false });
-                } else {
-                    db.ref('users/' + userId + '/miei_tavoli/' + matchId).update({ isStreaming: true });
-                }
-            });
-        }
-    };
 
     function disegnaTabellone() {
         if (isDragging) return; 
@@ -793,7 +721,7 @@
         }
 
         if (savedPerPage === '4') {
-            container.style.maxWidth = '1200px'; 
+            container.style.maxWidth = '1445px'; 
             container.style.marginLeft = 'auto';
             container.style.marginRight = 'auto';
         } else {
@@ -810,8 +738,7 @@
         tavoliDelMioAccount.forEach((matchId, index) => {
             const dati = tuttiITavoli[matchId] || { n0: 'G1', n1: 'G2', s0: 0, s1: 0, st0: 0, st1: 0 };
             const nomeDaMostrare = mieiTavoli[matchId].nome || matchId;
-            const isStreaming = mieiTavoli[matchId].isStreaming === true;
-
+            
             const isEditG1 = (editingSet.matchId === matchId && editingSet.player === 0);
             const isEditG2 = (editingSet.matchId === matchId && editingSet.player === 1);
             const disp0 = isEditG1 ? 'none' : 'flex'; const edit0 = isEditG1 ? 'flex' : 'none';
@@ -831,8 +758,8 @@
                     <div class="delete-table-btn" title="Tieni premuto 3 sec per scollegare" onpointerdown="startRemoveTimer('${matchId}')" onpointerup="cancelRemoveTimer()" onpointerleave="cancelRemoveTimer()">✖</div>
                     
                     <div style="display:flex; flex-direction:column; height:100%; justify-content:space-between; z-index:2; position:relative;">
-                        <div style="text-align:center; margin-bottom: 5px; position:relative;">
-                            <div style="font-size: 0.65rem; color: rgba(255,255,255,0.7); font-weight: bold; text-transform: uppercase;">ID: ${matchId}</div>
+                        <div style="text-align:center; margin-bottom: 4px; position:relative;">
+                            <div style="font-size: 0.55rem; color: rgba(255,255,255,0.7); font-weight: bold; text-transform: uppercase;">ID: ${matchId}</div>
                             <input type="text" class="table-name-input" id="tname-${matchId}" title="Doppio click per rinominare" value="${nomeDaMostrare}" 
                                 readonly
                                 ondblclick="this.removeAttribute('readonly'); this.defaultValue=this.value; this.value=''; this.focus();"
@@ -840,7 +767,7 @@
                                 onkeyup="if(event.key === 'Enter') this.blur();">
                         </div>
                         
-                        <div style="display:flex; justify-content:space-between; align-items:stretch; width:100%; margin: 10px 0 -5px 0; flex-grow: 1;">
+                        <div style="display:flex; justify-content:space-between; align-items:stretch; width:100%; margin: 8px 0 -4px 0; flex-grow: 1;">
                             <div style="display:flex; flex-direction:column; align-items:center; width:35%; height: 100%;">
                                 <div style="position:relative; width:100%; display:flex; flex-direction:column; align-items:center; margin-bottom: auto;">
                                     <input type="text" class="player-name-input" id="n0-${matchId}" value="${dati.n0 || 'G1'}" 
@@ -849,33 +776,22 @@
                                         onblur="this.setAttribute('readonly', true); if(this.value.trim() !== '') { aggiornaDatoTablet('${matchId}', 'n0', this.value); } else { this.value=this.defaultValue; }"
                                         onkeyup="if(event.key === 'Enter') this.blur();">
                                 </div>
-                                <div class="score-display" id="s0-${matchId}" style="margin: auto 0; transform: translateY(-15px);"></div>
+                                <div class="score-display" id="s0-${matchId}" style="margin: auto 0; transform: translateY(8px);">${dati.s0 !== undefined ? dati.s0 : 0}</div>
                                 
-                                <div class="set-container" title="Tieni premuto 3 sec per modificare" onpointerdown="startSetEditTimer('${matchId}', 0)" onpointerup="cancelSetEditTimer()" onpointerleave="cancelSetEditTimer()" style="margin-top: auto; margin-bottom: 5px;">
-                                    <div class="set-display" id="set-display-0-${matchId}" style="display:${disp0};"><span id="st0-${matchId}"></span><small>Set</small></div>
+                                <div class="set-container" title="Tieni premuto 3 sec per modificare" onpointerdown="startSetEditTimer('${matchId}', 0)" onpointerup="cancelSetEditTimer()" onpointerleave="cancelSetEditTimer()" style="margin-top: auto; margin-bottom: 4px; transform: translateY(20px);">
+                                    <div class="set-display" id="set-display-0-${matchId}" style="display:${disp0};"><span id="st0-${matchId}">${dati.st0 !== undefined ? dati.st0 : 0}</span><small>Set</small></div>
                                     <div class="set-edit" id="set-edit-0-${matchId}" style="display:${edit0};">
                                         <button class="btn-set-mod" onpointerdown="modificaSetDashboard('${matchId}', 0, -1); event.stopPropagation();">-</button>
-                                        <span id="st-edit-val-0-${matchId}"></span>
+                                        <span id="st-edit-val-0-${matchId}">${dati.st0 !== undefined ? dati.st0 : 0}</span>
                                         <button class="btn-set-mod" onpointerdown="modificaSetDashboard('${matchId}', 0, 1); event.stopPropagation();">+</button>
                                         <button class="btn-set-ok" onpointerdown="closeSetEdit(); event.stopPropagation();">OK</button>
                                     </div>
                                 </div>
                             </div>
 
-                            <div style="display:flex; flex-direction:column; align-items:center; width:30%; height: 100%;">
-                                <div class="vs-label" style="margin-bottom: auto;">Vs</div>
-                                <div style="display:flex; align-items:center; justify-content:center; margin: auto 0; transform: translateY(-15px);">
-                                    <button class="btn-invert" data-tooltip="Inverti Giocatori" onclick="invertiGiocatoriDashboard('${matchId}')">⇄</button>
-                                </div>
-                                <div style="display:flex; gap:10px; margin-top: auto; margin-bottom: 5px;">
-                                    <button id="btn-stream-${matchId}" class="btn-stream" style="background: ${isStreaming ? '#e74c3c' : '#7f8c8d'};" data-tooltip="${isStreaming ? 'STREAMING OFF' : 'STREAMING ON'}" onclick="toggleStreamingDashboard('${matchId}', ${isStreaming})">
-                                        ${isStreaming 
-                                            ? '<svg viewBox="0 0 24 24" width="20" height="20" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg>'
-                                            : '<svg viewBox="0 0 24 24" width="20" height="20" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path><line x1="2" y1="2" x2="22" y2="22"></line></svg>'}
-                                    </button>
-                                    <button class="btn-reset" data-tooltip="Azzera Partita" onclick="azzeraTavoloSolo('${matchId}')">🔄</button>
-                                    <button class="btn-termina" data-tooltip="Termina partita e salva nello storico" onclick="terminaESalvaTavolo('${matchId}')">💾</button>
-                                </div>
+                            <div style="width:102px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;">
+                                <div class="vs-label">VS</div>
+                                <button class="btn-invert" data-tooltip="Inverti Giocatori" onclick="invertiGiocatoriDashboard('${matchId}')">⇄</button>
                             </div>
 
                             <div style="display:flex; flex-direction:column; align-items:center; width:35%; height: 100%;">
@@ -886,39 +802,28 @@
                                         onblur="this.setAttribute('readonly', true); if(this.value.trim() !== '') { aggiornaDatoTablet('${matchId}', 'n1', this.value); } else { this.value=this.defaultValue; }"
                                         onkeyup="if(event.key === 'Enter') this.blur();">
                                 </div>
-                                <div class="score-display p2-text" id="s1-${matchId}" style="margin: auto 0; transform: translateY(-15px);"></div>
+                                <div class="score-display p2-text" id="s1-${matchId}" style="margin: auto 0; transform: translateY(8px);">${dati.s1 !== undefined ? dati.s1 : 0}</div>
                                 
-                                <div class="set-container p2-text" title="Tieni premuto 3 sec per modificare" onpointerdown="startSetEditTimer('${matchId}', 1)" onpointerup="cancelSetEditTimer()" onpointerleave="cancelSetEditTimer()" style="margin-top: auto; margin-bottom: 5px;">
-                                    <div class="set-display" id="set-display-1-${matchId}" style="display:${disp1};"><span id="st1-${matchId}"></span><small>Set</small></div>
+                                <div class="set-container p2-text" title="Tieni premuto 3 sec per modificare" onpointerdown="startSetEditTimer('${matchId}', 1)" onpointerup="cancelSetEditTimer()" onpointerleave="cancelSetEditTimer()" style="margin-top: auto; margin-bottom: 4px; transform: translateY(20px) ;">
+                                    <div class="set-display" id="set-display-1-${matchId}" style="display:${disp1};"><span id="st1-${matchId}">${dati.st1 !== undefined ? dati.st1 : 0}</span><small>Set</small></div>
                                     <div class="set-edit" id="set-edit-1-${matchId}" style="display:${edit1};">
                                         <button class="btn-set-mod" onpointerdown="modificaSetDashboard('${matchId}', 1, -1); event.stopPropagation();">-</button>
-                                        <span id="st-edit-val-1-${matchId}"></span>
+                                        <span id="st-edit-val-1-${matchId}">${dati.st1 !== undefined ? dati.st1 : 0}</span>
                                         <button class="btn-set-mod" onpointerdown="modificaSetDashboard('${matchId}', 1, 1); event.stopPropagation();">+</button>
                                         <button class="btn-set-ok" onpointerdown="closeSetEdit(); event.stopPropagation();">OK</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        <div style="display:flex; justify-content:center; gap: 21px; margin-top: -26px;">
+                            <button class="btn-reset" data-tooltip="Azzera Partita" onclick="azzeraTavoloSolo('${matchId}')">🔄</button>
+                            <button class="btn-termina" data-tooltip="Termina partita e salva nello storico" onclick="terminaESalvaTavolo('${matchId}')">💾</button>
+                        </div>
                     </div>
                 `;
                 container.appendChild(row);
             } 
-            
-            let btnStream = document.getElementById(`btn-stream-${matchId}`);
-            if (btnStream) {
-                btnStream.style.background = isStreaming ? '#e74c3c' : '#7f8c8d';
-                btnStream.setAttribute('data-tooltip', isStreaming ? 'STREAMING OFF' : 'STREAMING ON');
-                btnStream.innerHTML = isStreaming 
-                    ? '<svg viewBox="0 0 24 24" width="20" height="20" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg>'
-                    : '<svg viewBox="0 0 24 24" width="20" height="20" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path><line x1="2" y1="2" x2="22" y2="22"></line></svg>';
-                btnStream.onclick = () => toggleStreamingDashboard(matchId, isStreaming);
-            }
-
-            if (isStreaming) {
-                row.classList.remove('offline');
-            } else {
-                row.classList.add('offline');
-            }
 
             let inputNomeTavolo = document.getElementById(`tname-${matchId}`); 
             if (inputNomeTavolo && document.activeElement !== inputNomeTavolo) inputNomeTavolo.value = nomeDaMostrare;
@@ -1018,8 +923,8 @@
 
     function pulisciPartiteVecchie(storicoObj) {
         if(!storicoObj) return;
-        let seiMesiFa = new Date();
-        seiMesiFa.setMonth(seiMesiFa.getMonth() - 6);
+        let dueMesiFa = new Date();
+        dueMesiFa.setMonth(dueMesiFa.getMonth() - 2);
         
         let updates = {};
         let hasDeletions = false;
@@ -1033,7 +938,7 @@
                     let t = dParts[1].split(':');
                     if(d.length === 3 && t.length >= 2) {
                         let dataPartita = new Date(d[2], d[1] - 1, d[0], t[0], t[1], t[2] || 0);
-                        if(dataPartita < seiMesiFa) {
+                        if(dataPartita < dueMesiFa) {
                             updates[key] = null;
                             hasDeletions = true;
                         }
