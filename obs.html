@@ -24,58 +24,58 @@
     .scoreboard-container {
       display: flex;
       align-items: center;
-      gap: 10px; 
+      gap: 40px; 
     }
 
-    /* CONTENITORI GIOCATORI INDIPENDENTI */
+    /* CONTENITORI GIOCATORI INDIPENDENTI (+20% Dimensioni) */
     .player-box {
       display: flex;
       align-items: center;
-      gap: 15px;
-      min-width: 460px; /* Larghezza minima */
+      gap: 18px; /* +20% da 15px */
+      min-width: 552px; /* +20% da 460px */
       
-      /* Grafica */
+      /* Grafica (+20% bordi, raggi e padding) */
       background: #071f14; 
-      border: 3px solid #000;
-      border-radius: 10px;
-      padding: 10px 30px; 
+      border: 4px solid #000; /* Arrotondato da 3.6px per rendering */
+      border-radius: 12px; /* +20% da 10px */
+      padding: 12px 36px; /* +20% da 10px 30px */
       color: white;
       box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-      transition: width 0.3s ease; /* Transizione fluida per l'adattività */
     }
 
     .player-icon {
-      height: 50px;
+      height: 60px; /* +20% da 50px */
       width: auto;
       flex-shrink: 0; 
     }
 
     .name {
-      font-size: 33.6px; 
+      font-size: 40.32px; /* +20% da 33.6px */
       text-transform: uppercase;
       flex: 1; /* Occupa lo spazio centrale */
       text-align: center; /* Centra il testo nel suo spazio */
       white-space: nowrap; /* Impedisce al nome di andare a capo per forzare l'allargamento della casella */
     }
 
-    /* PUNTEGGI - VERDE BOSCO */
+    /* PUNTEGGI (+20% Dimensioni e Font) */
     .score {
-      font-size: 45px;
+      font-size: 54px; /* +20% da 45px */
       color: #fff;
       background: #164d34; 
-      padding: 0 15px;
-      border-radius: 5px;
-      min-width: 60px;
+      padding: 0 18px; /* +20% da 15px */
+      border-radius: 6px; /* +20% da 5px */
+      min-width: 72px; /* +20% da 60px */
       text-align: center;
       flex-shrink: 0;
     }
 
+    /* SET (+20% Dimensioni e Font) */
     .sets {
-      font-size: 38.25px; 
+      font-size: 45.9px; /* +20% da 38.25px */
       background: #fff; 
       color: #000;
-      width: 44.2px; 
-      height: 44.2px; 
+      width: 53.04px; /* +20% da 44.2px */
+      height: 53.04px; /* +20% da 44.2px */
       display: flex;
       align-items: center;
       justify-content: center;
@@ -84,7 +84,7 @@
       flex-shrink: 0;
     }
 
-    /* LOGO CENTRALE INDIPENDENTE */
+    /* LOGO CENTRALE INDIPENDENTE (Invariato) */
     .center-logo {
       height: 200px; 
       width: auto;
@@ -112,8 +112,8 @@
     </div>
 
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0;">
-      <img src="https://billiardscoreboard.github.io/BilliardScoreboard/solo_logo_trasparente.svg" class="center-logo" alt="App Logo" style="margin-bottom: 10px;margin-top: 150px;">
-      <img src="https://billiardscoreboard.github.io/BilliardScoreboard/solo_scritta_verde.svg" alt="App Testo" style="height: 150px; width: auto; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5)); margin-bottom: 70px;margin-top: -40px;">
+      <img src="https://billiardscoreboard.github.io/BilliardScoreboard/solo_logo_trasparente.svg" class="center-logo" alt="App Logo" style="margin-bottom: 10px;">
+      <img src="https://billiardscoreboard.github.io/BilliardScoreboard/solo_scritta_verde.svg" alt="App Testo" style="height: 35px; width: auto; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5)); margin-bottom: 40px; margin-top: 20px;">
     </div>
 
     <div class="player-box" id="p2-box">
@@ -126,6 +126,7 @@
   </div>
 
 <script>
+  // CONFIGURAZIONE FIREBASE (Invariata)
   const firebaseConfig = {
     apiKey: "AIzaSyCKJs9TTf7wUipvOMWG-tgfzVlpIj0kmGk",
     authDomain: "billiard-scoreboard-3cbb5.firebaseapp.com",
@@ -151,24 +152,6 @@
         document.getElementById('score1').innerText = data.s1 || 0;
         document.getElementById('st0').innerText = data.st0 || 0;
         document.getElementById('st1').innerText = data.st1 || 0;
-
-        // --- TRUCCO DELLA BILANCIA SIMMETRICA ---
-        // Adatta la larghezza delle caselle in base al contenuto più lungo
-        setTimeout(() => {
-          const p1 = document.getElementById('p1-box');
-          const p2 = document.getElementById('p2-box');
-          
-          p1.style.width = 'auto';
-          p2.style.width = 'auto';
-          
-          const w1 = p1.scrollWidth;
-          const w2 = p2.scrollWidth;
-          
-          const maxW = Math.max(w1, w2, 460); 
-          
-          p1.style.width = maxW + 'px';
-          p2.style.width = maxW + 'px';
-        }, 10);
       }
     });
   } else {
