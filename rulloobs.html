@@ -40,8 +40,8 @@
       align-items: center;
       width: max-content; /* Si allarga all'infinito in base ai tavoli collegati */
       
-      /* LA MAGIA DELL'ANIMAZIONE: scorre in 600 secondi, lineare, all'infinito */
-      animation: scorriRullo 600s linear infinite;
+      /* LA MAGIA DELL'ANIMAZIONE: scorre in 180 secondi, lineare, all'infinito */
+      animation: scorriRullo 180s linear infinite;
     }
 
     /* MOTORE DELL'ANIMAZIONE */
@@ -209,7 +209,7 @@
     });
 
     container.innerHTML = ''; 
-    container.style.animation = 'scorriRullo 25s linear infinite'; // Assicura che l'animazione riparta
+    container.style.animation = 'scorriRullo 180s linear infinite'; // Assicura che l'animazione riparta
 
     tavoliOrdinati.forEach(matchId => {
       const liveData = tuttiITavoliLive[matchId] || { n0: 'G1', n1: 'G2', s0: 0, s1: 0, st0: 0, st1: 0 };
