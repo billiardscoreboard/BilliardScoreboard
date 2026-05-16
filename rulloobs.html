@@ -14,16 +14,40 @@
       background: transparent;
       font-family: 'Roboto', sans-serif;
       overflow: hidden;
+      
+      /* Forza la barra ad ancorarsi in basso (se la vuoi in alto cambia flex-end con flex-start) */
+      height: 100vh;
+      display: flex;
+      align-items: flex-end; 
     }
 
-    /* CONTENITORE RULLO PRINCIPALE */
+    /* LA BARRA DI SFONDO TV (Larga tutto lo schermo) */
+    .ticker-wrapper {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.85); /* Sfondo scuro semi-trasparente */
+      border-top: 3px solid #164d34; /* Riga verde decorativa */
+      border-bottom: 3px solid #164d34;
+      overflow: hidden; /* Taglia via i tavoli quando escono dallo schermo */
+      box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+    }
+
+    /* IL RULLO CHE SCORRE ALL'INTERNO */
     #ticker-container {
       display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      padding: 10px;
-      justify-content: flex-start;
+      flex-wrap: nowrap; /* Fondamentale: impedisce di andare a capo */
+      gap: 60px; /* Spazio tra un tavolo e l'altro */
+      padding: 12px 0;
       align-items: center;
+      width: max-content; /* Si allarga all'infinito in base ai tavoli collegati */
+      
+      /* LA MAGIA DELL'ANIMAZIONE: scorre in 25 secondi, lineare, all'infinito */
+      animation: scorriRullo 25s linear infinite;
+    }
+
+    /* MOTORE DELL'ANIMAZIONE */
+    @keyframes scorriRullo {
+      0%   { transform: translateX(100vw); }  /* Parte fuori dallo schermo a DESTRA */
+      100% { transform: translateX(-100%); }  /* Scompare fuori dallo schermo a SINISTRA */
     }
 
     /* CASSETTA SINGOLO TAVOLO */
@@ -31,10 +55,10 @@
       display: flex;
       align-items: center;
       background: #071f14;
-      border: 3px solid #000;
+      border: 2px solid #fff;
       border-radius: 8px;
       color: white;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.8);
       overflow: hidden;
       flex-shrink: 0;
     }
@@ -68,7 +92,7 @@
       font-weight: 700;
       text-transform: uppercase;
       white-space: nowrap;
-      max-width: 140px;
+      max-width: 160px;
       overflow: hidden;
       text-overflow: ellipsis;
     }
@@ -122,17 +146,20 @@
       border: 2px solid #c0392b;
       margin: 20px;
       display: inline-block;
+      animation: none; /* L'errore non deve scorrere */
     }
   </style>
 </head>
 <body>
 
-  <div id="ticker-container">
-    <div id="status-msg">In attesa dei dati dall'account...</div>
+  <div class="ticker-wrapper">
+    <div id="ticker-container">
+      <div id="status-msg">In attesa dei dati dall'account...</div>
+    </div>
   </div>
 
 <script>
-  // 1. CONFIGURAZIONE FIREBASE CORRENTE
+  // CONFIGURAZIONE FIREBASE
   const firebaseConfig = {
     apiKey: "AIzaSyCKJs9TTf7wUipvOMWG-tgfzVlpIj0kmGk",
     authDomain: "billiard-scoreboard-3cbb5.firebaseapp.com",
@@ -144,7 +171,6 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // 2. RECUPERO USER ID DAI PARAMETRI URL
   const urlParams = new URLSearchParams(window.location.search);
   const userId = urlParams.get('user');
   const container = document.getElementById('ticker-container');
@@ -158,19 +184,18 @@
         ⚠️ ERRORE: ID utente mancante nell'indirizzo!<br>
         Configura la sorgente browser inserendo alla fine del link: ?user=IL_TUO_USER_ID
       </div>`;
+    container.style.animation = 'none'; // Ferma il rullo se c'è errore
   } else {
-    // 3. ASCOLTO DEI TAVOLI COLLEGATI ALL'ACCOUNT
     db.ref('users/' + userId + '/miei_tavoli').on('value', (snapMiei) => {
       mieiTavoli = snapMiei.val() || {};
       
-      // Se non ci sono tavoli associati
       if (Object.keys(mieiTavoli).length === 0) {
         container.innerHTML = '<div id="status-msg">Nessun biliardo collegato a questo account nella Direzione Gara.</div>';
+        container.style.animation = 'none';
         return;
       }
 
-      // Avvia l'ascolto globale dei punteggi dei match live
-      db.ref('matches').off(); // Pulizia vecchi listener
+      db.ref('matches').off(); 
       db.ref('matches').on('value', (snapMatches) => {
         tuttiITavoliLive = snapMatches.val() || {};
         aggiornaRulloGrafico();
@@ -178,20 +203,18 @@
     });
   }
 
-  // 4. FUNZIONE DINAMICA DI RENDERING DEL RULLO
   function aggiornaRulloGrafico() {
-    // Ordiniamo i tavoli in base all'ordine salvato sul pannello di controllo
     const tavoliOrdinati = Object.keys(mieiTavoli).sort((a, b) => {
       return (mieiTavoli[a].ordine || 0) - (mieiTavoli[b].ordine || 0);
     });
 
-    container.innerHTML = ''; // Svuota per ricostruire in tempo reale
+    container.innerHTML = ''; 
+    container.style.animation = 'scorriRullo 25s linear infinite'; // Assicura che l'animazione riparta
 
     tavoliOrdinati.forEach(matchId => {
       const liveData = tuttiITavoliLive[matchId] || { n0: 'G1', n1: 'G2', s0: 0, s1: 0, st0: 0, st1: 0 };
       const nomeEsteticoTavolo = mieiTavoli[matchId].nome || matchId;
 
-      // Creazione della singola stringa/box del tavolo
       const tableBox = document.createElement('div');
       tableBox.className = 'table-ticker-box';
       tableBox.innerHTML = `
