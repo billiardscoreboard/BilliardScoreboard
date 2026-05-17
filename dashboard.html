@@ -294,7 +294,7 @@
                     
                     <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
                         <div class="header-btns">
-                            <button class="btn-action-header btn-add" onclick="aggiungiTavolo()">➕ AGGIUNGI BILIARDO</button>
+                            <button class="btn-action-header btn-add" title="Tieni premuto 3 sec per aggiungere" onpointerdown="startAddTableTimer()" onpointerup="cancelAddTableTimer()" onpointerleave="cancelAddTableTimer()">➕ AGGIUNGI BILIARDO</button>
                         </div>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <span style="font-size: 0.85rem; font-weight: bold; color: #1a237e;">Tavoli visibili:</span>
@@ -388,6 +388,7 @@
     let matchBuffers = {}; 
     let backupTavoli = {}; 
 
+    let addTableTimer = null;
     let removeTimer = null;
     let isDragging = false; 
     let dragSrcId = null; 
@@ -692,6 +693,9 @@
     }
     // -----------------------------------
 
+    function startAddTableTimer() { addTableTimer = setTimeout(() => { aggiungiTavolo(); }, 3000); }
+    function cancelAddTableTimer() { if (addTableTimer) { clearTimeout(addTableTimer); addTableTimer = null; } }
+
     function startRemoveTimer(matchId) { removeTimer = setTimeout(() => { rimuoviTavolo(matchId); }, 3000); }
     function cancelRemoveTimer() { if (removeTimer) { clearTimeout(removeTimer); removeTimer = null; } }
 
@@ -910,7 +914,6 @@
         const targetId = targetElement.id.replace('row-', '');
         if (targetId === dragSrcId) return;
 
-        // 1. SCAMBIO GRAFICO IMMEDIATO: Inverte la posizione dei due tavoli nel DOM
         const srcElement = document.getElementById('row-' + dragSrcId);
         if (srcElement && targetElement) {
             const placeholder = document.createElement('div');
@@ -919,20 +922,18 @@
             placeholder.parentNode.replaceChild(srcElement, placeholder);
         }
 
-        // 2. RICALCOLO ORDINE: Assegna un nuovo ordine pulito (0, 1, 2...) in base alla nuova disposizione
         let updates = {};
         const container = document.getElementById('tables-container');
         Array.from(container.children).forEach((row, index) => {
             if (row.id && row.id.startsWith('row-')) {
                 const id = row.id.replace('row-', '');
                 if (mieiTavoli[id]) {
-                    mieiTavoli[id].ordine = index; // Aggiorna istantaneamente la memoria locale
+                    mieiTavoli[id].ordine = index; 
                     updates[id + '/ordine'] = index;
                 }
             }
         });
 
-        // 3. SALVATAGGIO: Invia la nuova disposizione corretta a Firebase
         db.ref('users/' + userId + '/miei_tavoli').update(updates);
         return false;
     }
@@ -1468,18 +1469,16 @@
     window.toggleSidebar = function() {
         const sidebar = document.getElementById('sidebar');
         const btn = document.getElementById('toggle-menu-btn');
-        sidebar.classList.toggle('collapsed');
+        sidebar.classList.toggle('sidebar-collapsed');
         
-        const currentWidth = sidebar.offsetWidth || 280; 
-        
-        if (sidebar.classList.contains('collapsed')) {
+        if (sidebar.classList.contains('sidebar-collapsed')) {
             btn.innerText = '❯';
-            sidebar.style.marginLeft = '-' + currentWidth + 'px';
+            sidebar.style.marginLeft = '-280px';
             btn.style.left = '0px';
         } else {
             btn.innerText = '❮';
             sidebar.style.marginLeft = '0px';
-            btn.style.left = currentWidth + 'px';
+            btn.style.left = '280px';
         }
     };
 </script>
