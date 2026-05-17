@@ -910,13 +910,29 @@
         const targetId = targetElement.id.replace('row-', '');
         if (targetId === dragSrcId) return;
 
-        const ordSrc = mieiTavoli[dragSrcId].ordine;
-        const ordTarget = mieiTavoli[targetId].ordine;
+        // 1. SCAMBIO GRAFICO IMMEDIATO: Inverte la posizione dei due tavoli nel DOM
+        const srcElement = document.getElementById('row-' + dragSrcId);
+        if (srcElement && targetElement) {
+            const placeholder = document.createElement('div');
+            targetElement.parentNode.insertBefore(placeholder, targetElement);
+            srcElement.parentNode.insertBefore(targetElement, srcElement);
+            placeholder.parentNode.replaceChild(srcElement, placeholder);
+        }
 
+        // 2. RICALCOLO ORDINE: Assegna un nuovo ordine pulito (0, 1, 2...) in base alla nuova disposizione
         let updates = {};
-        updates[dragSrcId + '/ordine'] = ordTarget;
-        updates[targetId + '/ordine'] = ordSrc;
+        const container = document.getElementById('tables-container');
+        Array.from(container.children).forEach((row, index) => {
+            if (row.id && row.id.startsWith('row-')) {
+                const id = row.id.replace('row-', '');
+                if (mieiTavoli[id]) {
+                    mieiTavoli[id].ordine = index; // Aggiorna istantaneamente la memoria locale
+                    updates[id + '/ordine'] = index;
+                }
+            }
+        });
 
+        // 3. SALVATAGGIO: Invia la nuova disposizione corretta a Firebase
         db.ref('users/' + userId + '/miei_tavoli').update(updates);
         return false;
     }
