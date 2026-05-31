@@ -51,7 +51,7 @@
 
     .name {
       font-size: 40.32px; /* +20% da 33.6px */
-      text-transform: uppercase;
+      text-transform: capitalize;
       flex: 1; /* Occupa lo spazio centrale */
       text-align: center; /* Centra il testo nel suo spazio */
       white-space: nowrap; /* Impedisce al nome di andare a capo per forzare l'allargamento della casella */
@@ -106,7 +106,7 @@
     
     <div class="player-box" id="p1-box">
       <img src="Logo_Giocatore_Bianco.svg" class="player-icon" alt="P1 Icon">
-      <div id="name0" class="name">GIOCATORE 1</div>
+      <div id="name0" class="name">giocatore 1</div>
       <div id="st0" class="sets">0</div>
       <div id="score0" class="score">0</div>
     </div>
@@ -119,7 +119,7 @@
     <div class="player-box" id="p2-box">
       <div id="score1" class="score p2-score">0</div>
       <div id="st1" class="sets p2-sets">0</div>
-      <div id="name1" class="name p2-name">GIOCATORE 2</div>
+      <div id="name1" class="name p2-name">giocatore 2</div>
       <img src="Logo_Giocatore_Giallo.svg" class="player-icon" alt="P2 Icon">
     </div>
 
@@ -146,8 +146,8 @@
     matchRef.on('value', (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        document.getElementById('name0').innerText = data.n0 || "GIOCATORE 1";
-        document.getElementById('name1').innerText = data.n1 || "GIOCATORE 2";
+        document.getElementById('name0').innerText = (data.n0 || "Giocatore 1").toLowerCase();
+        document.getElementById('name1').innerText = (data.n1 || "Giocatore 2").toLowerCase();
         document.getElementById('score0').innerText = data.s0 || 0;
         document.getElementById('score1').innerText = data.s1 || 0;
         document.getElementById('st0').innerText = data.st0 || 0;
