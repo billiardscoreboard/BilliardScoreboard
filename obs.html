@@ -147,8 +147,19 @@
     matchRef.on('value', (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        document.getElementById('name0').innerText = (data.n0 || "Giocatore 1").toLowerCase();
-        document.getElementById('name1').innerText = (data.n1 || "Giocatore 2").toLowerCase();
+        
+        let nome1 = data.n0 || "Giocatore 1";
+        let nome2 = data.n1 || "Giocatore 2";
+
+        // LOGICA "NESSUN INCONTRO"
+        if (nome1.trim().toUpperCase() === "GIOCATORE 1" && nome2.trim().toUpperCase() === "GIOCATORE 2") {
+            document.getElementById('name0').innerText = "nessun";
+            document.getElementById('name1').innerText = "incontro";
+        } else {
+            document.getElementById('name0').innerText = nome1.toLowerCase();
+            document.getElementById('name1').innerText = nome2.toLowerCase();
+        }
+
         document.getElementById('score0').innerText = data.s0 || 0;
         document.getElementById('score1').innerText = data.s1 || 0;
         document.getElementById('st0').innerText = data.st0 || 0;
