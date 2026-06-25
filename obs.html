@@ -150,14 +150,23 @@
         
         let nome1 = data.n0 || "Giocatore 1";
         let nome2 = data.n1 || "Giocatore 2";
+        
+        let name0El = document.getElementById('name0');
+        let name1El = document.getElementById('name1');
 
-        // LOGICA "NESSUN INCONTRO"
+        // LOGICA "NESSUN INCONTRO" IN MAIUSCOLO
         if (nome1.trim().toUpperCase() === "GIOCATORE 1" && nome2.trim().toUpperCase() === "GIOCATORE 2") {
-            document.getElementById('name0').innerText = "nessun";
-            document.getElementById('name1').innerText = "incontro";
+            name0El.innerText = "NESSUN";
+            name1El.innerText = "INCONTRO";
+            // Forza il maiuscolo scavalcando il capitalize del CSS
+            name0El.style.textTransform = "uppercase";
+            name1El.style.textTransform = "uppercase";
         } else {
-            document.getElementById('name0').innerText = nome1.toLowerCase();
-            document.getElementById('name1').innerText = nome2.toLowerCase();
+            name0El.innerText = nome1.toLowerCase();
+            name1El.innerText = nome2.toLowerCase();
+            // Ripristina la regola di default (iniziale maiuscola)
+            name0El.style.textTransform = "capitalize";
+            name1El.style.textTransform = "capitalize";
         }
 
         document.getElementById('score0').innerText = data.s0 || 0;
