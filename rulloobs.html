@@ -212,15 +212,24 @@
     container.style.animation = 'scorriRullo 80s linear infinite'; // Assicura che l'animazione riparta
 
     tavoliOrdinati.forEach(matchId => {
-      const liveData = tuttiITavoliLive[matchId] || { n0: 'G1', n1: 'G2', s0: 0, s1: 0, st0: 0, st1: 0 };
+      const liveData = tuttiITavoliLive[matchId] || { n0: 'Giocatore 1', n1: 'Giocatore 2', s0: 0, s1: 0, st0: 0, st1: 0 };
       const nomeEsteticoTavolo = mieiTavoli[matchId].nome || matchId;
+
+      let nome1 = liveData.n0 || "Giocatore 1";
+      let nome2 = liveData.n1 || "Giocatore 2";
+
+      // LOGICA "NESSUN INCONTRO"
+      if (nome1.trim().toUpperCase() === "GIOCATORE 1" && nome2.trim().toUpperCase() === "GIOCATORE 2") {
+          nome1 = "Nessun";
+          nome2 = "Incontro";
+      }
 
       const tableBox = document.createElement('div');
       tableBox.className = 'table-ticker-box';
       tableBox.innerHTML = `
         <div class="ticker-table-name">${nomeEsteticoTavolo}</div>
         <div class="ticker-match-content">
-          <div class="player-name">${liveData.n0 || 'GIOCATORE 1'}</div>
+          <div class="player-name">${nome1}</div>
           <div class="set-circle">${liveData.st0 !== undefined ? liveData.st0 : 0}</div>
           <div class="score-badge">${liveData.s0 !== undefined ? liveData.s0 : 0}</div>
           
@@ -228,7 +237,7 @@
           
           <div class="score-badge p2-score">${liveData.s1 !== undefined ? liveData.s1 : 0}</div>
           <div class="set-circle p2-sets">${liveData.st1 !== undefined ? liveData.st1 : 0}</div>
-          <div class="player-name p2-color">${liveData.n1 || 'GIOCATORE 2'}</div>
+          <div class="player-name p2-color">${nome2}</div>
         </div>
       `;
       container.appendChild(tableBox);
