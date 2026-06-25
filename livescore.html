@@ -108,7 +108,7 @@
     .player-name {
       font-size: 1.5rem;
       font-weight: 900;
-      text-transform: capitalize; /* Prima lettera maiuscola */
+      text-transform: capitalize; /* Di default prima lettera maiuscola */
       text-align: center;
       margin-bottom: 15px;
       white-space: nowrap;
@@ -248,9 +248,19 @@
       const liveData = tuttiITavoliLive[matchId] || { n0: 'Giocatore 1', n1: 'Giocatore 2', s0: 0, s1: 0, st0: 0, st1: 0 };
       const nomeEsteticoTavolo = mieiTavoli[matchId].nome || matchId;
 
-      // Applica il toLowerCase() per far funzionare bene il text-transform: capitalize del CSS
-      const n0 = (liveData.n0 || 'Giocatore 1').toLowerCase();
-      const n1 = (liveData.n1 || 'Giocatore 2').toLowerCase();
+      let rawN0 = liveData.n0 || 'Giocatore 1';
+      let rawN1 = liveData.n1 || 'Giocatore 2';
+
+      let n0 = rawN0.toLowerCase();
+      let n1 = rawN1.toLowerCase();
+      let styleTransform = "capitalize";
+
+      // LOGICA "NESSUN INCONTRO" IN MAIUSCOLO
+      if (rawN0.trim().toUpperCase() === "GIOCATORE 1" && rawN1.trim().toUpperCase() === "GIOCATORE 2") {
+          n0 = "NESSUN";
+          n1 = "INCONTRO";
+          styleTransform = "uppercase";
+      }
 
       const card = document.createElement('div');
       card.className = 'table-card';
@@ -260,7 +270,7 @@
         <div class="table-body">
           
           <div class="player-col">
-            <div class="player-name" title="${n0}">${n0}</div>
+            <div class="player-name" title="${n0}" style="text-transform: ${styleTransform};">${n0}</div>
             <div class="score-row">
               <div class="player-sets">${liveData.st0 !== undefined ? liveData.st0 : 0}</div>
               <div class="player-score">${liveData.s0 !== undefined ? liveData.s0 : 0}</div>
@@ -272,7 +282,7 @@
           </div>
 
           <div class="player-col">
-            <div class="player-name p2-text" title="${n1}">${n1}</div>
+            <div class="player-name p2-text" title="${n1}" style="text-transform: ${styleTransform};">${n1}</div>
             <div class="score-row">
               <div class="player-score p2-score">${liveData.s1 !== undefined ? liveData.s1 : 0}</div>
               <div class="player-sets p2-sets">${liveData.st1 !== undefined ? liveData.st1 : 0}</div>
