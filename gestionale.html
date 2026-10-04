@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billiard Scoreboard - Gestionale Tariffe e Statistiche</title>
+  
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+  
+  <!-- LIBRERIA PER IL SALVATAGGIO IN PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; outline: none; font-family: 'Roboto', sans-serif; }
+    
+    body { background-color: #06170e; color: white; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    :root {
+      --bg-panel: #0a2418;
+      --border-green: #1a5938;
+      --border-light: #27ae60;
+      --color-p2: #facc15;
+      --btn-red: #c0392b;
+      --btn-blue: #0056b3;
+      --btn-purple: #8e44ad;
+      --btn-gray: #555555;
+    }
+
+    /* HEADER */
+    .header {
+      background: #0b2b1c; border-bottom: 4px solid var(--border-green); padding: 10px 20px;
+      display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.6); flex-shrink: 0; position: relative;
+    }
+    .header-datetime { font-size: 1.1rem; font-weight: bold; color: var(--color-p2); }
+    .header-title { font-size: 1.6rem; font-weight: 900; text-transform: uppercase; color: #fff; position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; }
+    .header-controls { display: flex; gap: 8px; }
+    
+    .btn { padding: 8px 12px; font-weight: bold; font-size: 0.9rem; border-radius: 8px; cursor: pointer; border: 2px solid #000; color: white; text-transform: uppercase; transition: transform 0.1s; }
+    .btn:active { transform: scale(0.95); }
+    .btn-green { background: var(--border-light); }
+    .btn-blue { background: var(--btn-blue); }
+    .btn-purple { background: var(--btn-purple); }
+    .btn-red { background: var(--btn-red); }
+    .btn-gray { background: var(--btn-gray); }
+
+    /* GRIGLIA TAVOLI - 3 COLONNE FISSE, ALTEZZA COMPLETA SCHERMO */
+    .grid-container {
+      flex: 1; padding: 10px; display: grid; 
+      grid-template-columns: repeat(3, 1fr); 
+      grid-template-rows: repeat(2, 1fr);
+      gap: 10px; overflow: hidden; align-content: stretch;
+    }
+
+    /* CARD TAVOLO */
+    .table-card { background: var(--bg-panel); border: 2px solid var(--border-green); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; height: 100%; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    
+    .table-header { background: #8e5e2d; color: white; padding: 8px 12px; font-size: 1.32rem; font-weight: 900; text-transform: uppercase; text-align: center; border-bottom: 2px solid #000; display: flex; justify-content: center; align-items: center; position: relative; }
+    .status-badge { font-size: 0.8rem; padding: 3px 8px; border-radius: 15px; border: 2px solid white; position: absolute; right: 12px; }
+    
+    .status-free { background: var(--border-light); }
+    .status-busy { background: var(--btn-red); }
+
+    .table-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex-grow: 1; justify-content: space-between; }
+
+    /* FORM INPUTS */
+    .input-group { display: flex; justify-content: space-between; align-items: center; background: #000; padding: 6px 10px; border-radius: 6px; border: 1px solid #333; }
+    .input-label { font-size: 0.9rem; font-weight: bold; color: #ccc; }
+    .custom-select, .custom-input { background: #111; color: white; border: 1px solid var(--border-green); padding: 4px; border-radius: 4px; font-size: 0.9rem; font-weight: bold; text-align: right; width: 160px; }
+    .custom-select { text-align: left; }
+
+    /* DISPLAY TIMER E COSTO */
+    .display-row { display: flex; justify-content: space-between; gap: 10px; margin-top: auto; }
+    .display-box { flex: 1; background: #000; border: 2px solid var(--border-green); border-radius: 6px; padding: 8px; text-align: center; }
+    .display-box .title { font-size: 0.75rem; color: #aaa; margin-bottom: 3px; text-transform: uppercase; font-weight: bold; }
+    .display-box .value { font-size: 2.24rem; font-weight: 900; font-family: monospace; }
+    .val-timer { color: white; }
+    .val-cost { color: var(--color-p2); }
+
+    /* CONTROLLI */
+    .control-row { display: flex; justify-content: space-between; gap: 6px; margin-top: 4px; }
+    .control-row .btn { flex: 1; padding: 8px 0; font-size: 0.85rem; }
+
+    /* DIVISIONE CONTO */
+    .split-row { display: flex; flex-direction: column; gap: 4px; background: #111; padding: 6px; border-radius: 6px; border: 1px solid #333; margin-top: 2px; }
+    .split-title { font-size: 0.75rem; font-weight: bold; color: #ccc; text-align: center; }
+    .split-buttons { display: flex; justify-content: center; align-items: center; gap: 8px; }
+    .split-btn { background: #222; border: 2px solid #555; color: white; font-weight: bold; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; transition: background 0.2s; font-size: 0.9rem; }
+    .split-btn:hover, .split-btn.active-split { background: var(--color-p2); border-color: var(--color-p2); color: black; }
+    .split-result { text-align: center; font-size: 1.2rem; font-weight: bold; color: #fff; margin-left: 10px; }
+
+    /* OVERLAY MODALS */
+    .overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); z-index: 100; display: none; justify-content: center; align-items: center; }
+    .modal-card { background: var(--bg-panel); border: 3px solid var(--border-green); border-radius: 12px; padding: 25px; width: 90%; max-width: 600px; max-height: 90vh; display: flex; flex-direction: column; }
+    .modal-title { font-size: 1.6rem; font-weight: 900; color: var(--color-p2); text-transform: uppercase; margin-bottom: 15px; text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; }
+    
+    /* ANAGRAFICA CLIENTI */
+    .customer-form { display: flex; gap: 10px; margin-bottom: 15px; }
+    .customer-form input { flex: 1; background: #000; color: white; border: 2px solid #333; padding: 8px; border-radius: 6px; font-size: 1rem; }
+    .customer-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; border: 2px solid #333; padding: 10px; border-radius: 6px; background: #05100a; }
+    .customer-item { display: flex; justify-content: space-between; background: #111; padding: 8px; border-radius: 6px; border: 1px solid #222; align-items: center; }
+    .customer-name { font-weight: bold; font-size: 1.1rem; }
+
+    /* STATISTICHE TABLE */
+    .stat-table { width: 100%; border-collapse: collapse; color: white; }
+    .stat-th { padding: 8px; text-align: left; background: #111; border-bottom: 2px solid #333; position: sticky; top: 0; }
+    .stat-td { padding: 8px; border-bottom: 1px solid #222; }
+
+    #login-overlay { display: flex; }
+    #auth-error { color: var(--btn-red); font-weight: bold; margin-top: 10px; display: none; text-align: center; }
+    
+    .pagamento-select { background: #111; color: white; border: 1px solid var(--border-green); padding: 6px; border-radius: 6px; font-size: 1rem; font-weight: bold; text-align: left; }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN OVERLAY -->
+  <div id="login-overlay" class="overlay">
+    <div class="modal-card" style="max-width: 400px;">
+      <div class="modal-title" style="color: white;">ACCESSO GESTIONALE</div>
+      <input type="email" id="email-input" class="custom-input" style="width: 100%; text-align: left; margin-bottom: 15px; padding: 12px;" placeholder="Email">
+      <input type="password" id="password-input" class="custom-input" style="width: 100%; text-align: left; margin-bottom: 15px; padding: 12px;" placeholder="Password">
+      
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px; padding-left: 2px;">
+        <input type="checkbox" id="ricorda-checkbox" style="width: 18px; height: 18px; cursor: pointer;">
+        <label for="ricorda-checkbox" style="cursor: pointer; color: #ccc; font-size: 0.95rem; font-weight: bold; user-select: none;">Ricorda Credenziali</label>
+      </div>
+
+      <button class="btn btn-green" style="width: 100%; padding: 12px;" onclick="login()">ENTRA</button>
+      <div id="auth-error">Credenziali errate</div>
+    </div>
+  </div>
+
+  <!-- TARIFFE OVERLAY GLOBALE -->
+  <div id="tariffe-overlay" class="overlay">
+    <div class="modal-card" style="max-width: 400px;">
+      <div class="modal-title">Tariffe Globali</div>
+      <div class="input-group" style="margin-bottom: 15px; padding: 12px;">
+        <span class="input-label">Tariffa Oraria (€):</span>
+        <input type="number" id="global-costo" class="custom-input" value="10.00" step="0.50" style="font-size:1.1rem;">
+      </div>
+      <div class="input-group" style="margin-bottom: 15px; padding: 12px;">
+        <span class="input-label">Tariffa Allenamento (€):</span>
+        <input type="number" id="global-allenamento" class="custom-input" value="8.00" step="0.50" style="font-size:1.1rem;">
+      </div>
+      <div class="input-group" style="margin-bottom: 20px; padding: 12px;">
+        <span class="input-label">Scatto (€):</span>
+        <input type="number" id="global-scatto" class="custom-input" value="0.00" step="0.50" style="font-size:1.1rem;">
+      </div>
+      <button class="btn btn-green" style="margin-bottom: 10px; padding: 12px;" onclick="salvaTariffeGlobali()">SALVA TARIFFE GLOBALI</button>
+      <button class="btn btn-gray" style="padding: 12px;" onclick="chiudiTariffe()">CHIUDI</button>
+    </div>
+  </div>
+
+  <!-- ANAGRAFICA OVERLAY -->
+  <div id="anagrafica-overlay" class="overlay">
+    <div class="modal-card">
+      <div class="modal-title">Anagrafica Clienti</div>
+      <div class="customer-form">
+        <input type="text" id="new-customer-name" placeholder="Nome e Cognome o Nickname">
+        <button class="btn btn-green" onclick="aggiungiCliente()">AGGIUNGI</button>
+      </div>
+      <div class="customer-list" id="customer-list-container">
+          </div>
+      <button class="btn btn-gray" onclick="chiudiAnagrafica()">CHIUDI</button>
+    </div>
+  </div>
+
+  <!-- PAGAMENTO OVERLAY -->
+  <div id="pagamento-overlay" class="overlay">
+    <div class="modal-card" style="max-width: 550px;">
+      <div class="modal-title">CASSA TAVOLO</div>
+      
+      <div style="text-align:center; margin-bottom: 20px;">
+          <div style="font-size: 1.4rem; font-weight: bold; color: #ccc;" id="pagamento-tavolo-nome">Biliardo</div>
+          <div style="font-size: 3rem; font-weight: 900; color: var(--color-p2); margin: 5px 0;" id="pagamento-totale">€ 0.00</div>
+          <div style="font-size: 1.1rem; color: #aaa; font-family: monospace;" id="pagamento-tempo">00:00:00</div>
+      </div>
+
+      <div class="input-group" style="margin-bottom: 15px; padding: 12px; border-color: var(--color-p2);">
+        <span class="input-label" style="color: white;">In quante persone pagano?</span>
+        <select id="pagamento-num-persone" class="pagamento-select" style="border-color: var(--color-p2); width: 180px;" onchange="aggiornaDropdownPaganti()">
+          <option value="1">1 Persona</option>
+          <option value="2">2 Persone</option>
+          <option value="3">3 Persone</option>
+          <option value="4">4 Persone</option>
+        </select>
+      </div>
+
+      <div id="paganti-container" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 25px; overflow-y: auto; max-height: 250px;">
+          </div>
+
+      <div style="display: flex; gap: 15px;">
+          <button class="btn btn-green" style="flex: 1; padding: 15px; font-size: 1.1rem;" onclick="confermaPagamento()">CONFERMA PAGAMENTO</button>
+          <button class="btn btn-red" style="flex: 1; padding: 15px; font-size: 1.1rem;" onclick="chiudiPagamento()">ANNULLA</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATISTICHE OVERLAY -->
+  <div id="statistiche-overlay" class="overlay">
+    <div class="modal-card" style="max-width: 1000px; width: 95%;">
+      <div class="modal-title">STATISTICHE E FILTRI AVANZATI</div>
+      
+      <div class="customer-form" style="flex-wrap: wrap; align-items: flex-end; gap: 10px;">
+        
+        <div style="display:flex; flex-direction:column; gap:4px; flex:1; min-width: 140px;">
+            <label style="color:#aaa; font-size:0.8rem;">Periodo:</label>
+            <select id="stat-periodo" class="custom-select" style="width:100%; font-size: 0.9rem;" onchange="document.getElementById('custom-dates').style.display = this.value === 'personalizza' ? 'flex' : 'none';">
+                <option value="oggi">Oggi</option>
+                <option value="ieri">Ieri</option>
+                <option value="7giorni">Ultimi 7 giorni</option>
+                <option value="30giorni">Ultimi 30 giorni</option>
+                <option value="365giorni">Ultimi 365 giorni</option>
+                <option value="personalizza">Personalizza</option>
+            </select>
+        </div>
+
+        <div id="custom-dates" style="display:none; gap:10px;">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <label style="color:#aaa; font-size:0.8rem;">Dal:</label>
+                <input type="date" id="stat-dal" class="custom-input" style="width:130px; text-align:left; font-size: 0.9rem;">
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <label style="color:#aaa; font-size:0.8rem;">Al:</label>
+                <input type="date" id="stat-al" class="custom-input" style="width:130px; text-align:left; font-size: 0.9rem;">
+            </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:4px; flex:1; min-width: 140px;">
+            <label style="color:#aaa; font-size:0.8rem;">Filtra Biliardo:</label>
+            <select id="stat-filtro-biliardo" class="custom-select" style="width:100%; font-size: 0.9rem;">
+                <option value="tutti">Tutti i Biliardi</option>
+            </select>
+        </div>
+        
+        <div style="display:flex; flex-direction:column; gap:4px; flex:1; min-width: 140px;">
+            <label style="color:#aaa; font-size:0.8rem;">Filtra Giocatore:</label>
+            <select id="stat-filtro-giocatore" class="custom-select" style="width:100%; font-size: 0.9rem;">
+                <option value="tutti">Tutti i Giocatori</option>
+            </select>
+        </div>
+
+        <div style="display:flex; gap: 8px;">
+            <button class="btn btn-green" onclick="caricaEcalcolaStatistiche()" style="height:36px; font-size: 0.8rem;">VISUALIZZA</button>
+            <button class="btn btn-blue" onclick="salvaComePDF()" style="height:36px; font-size: 0.8rem;">SALVA COME PDF</button>
+        </div>
+      </div>
+      
+      <div id="area-stampa-pdf" style="display:flex; flex-direction:column; flex:1; min-height:0;">
+          <div style="overflow-y:auto; flex:1; border:2px solid #333; border-radius:6px; background:#000; margin-bottom:15px; min-height: 200px;">
+              <table class="stat-table">
+                  <thead>
+                      <tr>
+                          <th class="stat-th">Dettaglio Partita</th>
+                          <th class="stat-th" style="text-align:center;">Tempo</th>
+                          <th class="stat-th" style="text-align:right;">Incasso</th>
+                      </tr>
+                  </thead>
+                  <tbody id="stat-tbody">
+                      </tbody>
+              </table>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; background:#111; padding:10px 15px; border-radius:6px; border:2px solid var(--border-green); margin-bottom:15px; align-items: center;">
+              <div style="font-size:1.1rem; font-weight:bold;">TOTALE FILTRI:</div>
+              <div style="text-align:right; display: flex; gap: 20px; align-items: center;">
+                  <div style="font-size:0.9rem; color:#aaa;">Tempo: <span id="stat-tot-tempo" style="color:white; font-weight: bold;">00:00:00</span></div>
+                  <div style="font-size:1.6rem; color:var(--color-p2); font-weight:900;" id="stat-tot-incasso">€ 0.00</div>
+              </div>
+          </div>
+      </div>
+
+      <button class="btn btn-gray" onclick="chiudiStatistiche()">CHIUDI</button>
+    </div>
+  </div>
+
+  <div class="header">
+    <div class="header-datetime" id="top-datetime"></div>
+    <div class="header-title">GESTIONALE COSTI BILIARDI</div>
+    <div class="header-controls">
+      <button class="btn btn-gray" onclick="apriTariffe()">TARIFFE</button>
+      <button class="btn btn-purple" onclick="apriStatistiche()">STATISTICHE</button>
+      <button class="btn btn-blue" onclick="apriAnagrafica()">ANAGRAFICA</button>
+      <button class="btn btn-red" onclick="logout()">LOGOUT</button>
+    </div>
+  </div>
+
+  <div class="grid-container" id="tables-grid">
+    </div>
+
+<script>
+  // CONFIGURAZIONE FIREBASE
+  const firebaseConfig = {
+    apiKey: "AIzaSyCKJs9TTf7wUipvOMWG-tgfzVlpIj0kmGk",
+    authDomain: "billiard-scoreboard-3cbb5.firebaseapp.com",
+    databaseURL: "https://billiard-scoreboard-3cbb5-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "billiard-scoreboard-3cbb5",
+    appId: "1:50403982389:web:57c2b0dbe03b4b47dec57c"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const auth = firebase.auth();
+  let userId = null;
+
+  // STATO LOCALE
+  let tavoliConfig = {};
+  let tavoliState = {};
+  let clientiDb = {};
+  let tariffeGlobali = { costoOrario: 10, scattoRisposta: 0, tariffaAllenamento: 8 };
+  let timerInterval = null;
+
+  // VARIABILI PAGAMENTO
+  let tavoloInPagamento = null;
+  let datiPagamentoTemp = { tempo: 0, costo: 0 };
+  let divisioneContoAttuale = {};
+
+  // --- AUTH ---
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      userId = user.uid;
+      document.getElementById('login-overlay').style.display = 'none';
+      avviaAscoltoDati();
+      if(!timerInterval) timerInterval = setInterval(aggiornaTimerVisivi, 1000);
+    } else {
+      userId = null;
+      document.getElementById('login-overlay').style.display = 'flex';
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+  });
+
+  function login() {
+    const e = document.getElementById('email-input').value.trim();
+    const p = document.getElementById('password-input').value;
+    const ricorda = document.getElementById('ricorda-checkbox').checked;
+    
+    document.getElementById('auth-error').style.display = 'none';
+    auth.signInWithEmailAndPassword(e, p).then(() => {
+      if (ricorda) {
+        localStorage.setItem('gestionale_email', e);
+        localStorage.setItem('gestionale_password', p);
+        localStorage.setItem('gestionale_ricorda', 'true');
+      } else {
+        localStorage.removeItem('gestionale_email');
+        localStorage.removeItem('gestionale_password');
+        localStorage.removeItem('gestionale_ricorda');
+      }
+    }).catch(() => {
+      document.getElementById('auth-error').style.display = 'block';
+    });
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const ricorda = localStorage.getItem('gestionale_ricorda') === 'true';
+    if (ricorda) {
+      document.getElementById('email-input').value = localStorage.getItem('gestionale_email') || '';
+      document.getElementById('password-input').value = localStorage.getItem('gestionale_password') || '';
+      document.getElementById('ricorda-checkbox').checked = true;
+    }
+  });
+
+  function logout() { auth.signOut(); }
+
+  // --- SINCRONIZZAZIONE DATI ---
+  function avviaAscoltoDati() {
+    db.ref('users/' + userId + '/miei_tavoli').on('value', snap => {
+      tavoliConfig = snap.val() || {};
+      generaGriglia();
+    });
+
+    db.ref('users/' + userId + '/gestionale/clienti').on('value', snap => {
+      clientiDb = snap.val() || {};
+      aggiornaSelectClienti();
+      aggiornaListaAnagrafica();
+    });
+
+    db.ref('users/' + userId + '/gestionale/tavoli').on('value', snap => {
+      tavoliState = snap.val() || {};
+      aggiornaUI();
+    });
+
+    db.ref('users/' + userId + '/gestionale/tariffe').on('value', snap => {
+      tariffeGlobali = snap.val() || { costoOrario: 10, scattoRisposta: 0, tariffaAllenamento: 8 };
+      document.getElementById('global-costo').value = (tariffeGlobali.costoOrario || 10).toFixed(2);
+      document.getElementById('global-scatto').value = (tariffeGlobali.scattoRisposta || 0).toFixed(2);
+      document.getElementById('global-allenamento').value = (tariffeGlobali.tariffaAllenamento || 8).toFixed(2);
+    });
+  }
+
+  // --- COSTRUZIONE UI ---
+  function generaGriglia() {
+    const grid = document.getElementById('tables-grid');
+    grid.innerHTML = '';
+    
+    const ordinati = Object.keys(tavoliConfig).sort((a, b) => (tavoliConfig[a].ordine || 0) - (tavoliConfig[b].ordine || 0));
+
+    ordinati.forEach(id => {
+      const nomeTavolo = tavoliConfig[id].nome || id;
+      const divisioneCorrente = divisioneContoAttuale[id] || 1;
+      
+      const card = document.createElement('div');
+      card.className = 'table-card';
+      card.innerHTML = `
+        <div class="table-header">
+          <span>${nomeTavolo}</span>
+          <span id="badge-${id}" class="status-badge status-free">LIBERO</span>
+        </div>
+        <div class="table-body">
+          
+          <div class="input-group">
+            <span class="input-label">Giocatore:</span>
+            <select id="cliente-${id}" class="custom-select" onchange="salvaImpostazioni('${id}')">
+              <option value="">-- Nessuno/Ospite --</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <span class="input-label">Tariffa:</span>
+            <select id="tipo-tariffa-${id}" class="custom-select" onchange="salvaImpostazioni('${id}')">
+              <option value="oraria">Oraria Standard</option>
+              <option value="allenamento">Allenamento</option>
+            </select>
+          </div>
+
+          <div class="display-row">
+            <div class="display-box">
+              <div class="title">Tempo Trascorso</div>
+              <div class="value val-timer" id="timer-${id}">00:00:00</div>
+            </div>
+            <div class="display-box">
+              <div class="title">Totale Parziale</div>
+              <div class="value val-cost" id="totale-${id}">€ 0.00</div>
+            </div>
+          </div>
+
+          <div class="control-row">
+            <button class="btn btn-green" id="btn-start-${id}" onclick="azioneTimer('${id}', 'start')">START</button>
+            <button class="btn btn-red" id="btn-stop-${id}" onclick="azioneTimer('${id}', 'stop')">STOP</button>
+            <button class="btn btn-gray" id="btn-reset-${id}" onclick="azioneTimer('${id}', 'reset')">PAGA E CHIUDI</button>
+          </div>
+
+          <div class="split-row">
+            <div class="split-title">DIVIDI CONTO (QUOTA A PERSONA)</div>
+            <div class="split-buttons">
+              <button class="split-btn ${divisioneCorrente === 1 ? 'active-split' : ''}" onclick="calcolaQuota('${id}', 1, event)">1</button>
+              <button class="split-btn ${divisioneCorrente === 2 ? 'active-split' : ''}" onclick="calcolaQuota('${id}', 2, event)">2</button>
+              <button class="split-btn ${divisioneCorrente === 3 ? 'active-split' : ''}" onclick="calcolaQuota('${id}', 3, event)">3</button>
+              <button class="split-btn ${divisioneCorrente === 4 ? 'active-split' : ''}" onclick="calcolaQuota('${id}', 4, event)">4</button>
+              <div class="split-result" id="quota-${id}">-</div>
+            </div>
+          </div>
+
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+    
+    aggiornaSelectClienti();
+    aggiornaUI();
+  }
+
+  // --- LOGICA GESTIONALE ---
+  function apriTariffe() { document.getElementById('tariffe-overlay').style.display = 'flex'; }
+  function chiudiTariffe() { document.getElementById('tariffe-overlay').style.display = 'none'; }
+  
+  function salvaTariffeGlobali() {
+    const costo = parseFloat(document.getElementById('global-costo').value) || 0;
+    const scatto = parseFloat(document.getElementById('global-scatto').value) || 0;
+    const allenamento = parseFloat(document.getElementById('global-allenamento').value) || 0;
+    db.ref('users/' + userId + '/gestionale/tariffe').set({ costoOrario: costo, scattoRisposta: scatto, tariffaAllenamento: allenamento });
+    chiudiTariffe();
+  }
+
+  function salvaImpostazioni(id) {
+    if (!tavoliState[id]) inizializzaStatoTavolo(id);
+    const cliente = document.getElementById(`cliente-${id}`).value;
+    const tipoTariffa = document.getElementById(`tipo-tariffa-${id}`).value;
+    db.ref('users/' + userId + '/gestionale/tavoli/' + id).update({ cliente: cliente, tipoTariffa: tipoTariffa });
+  }
+
+  function inizializzaStatoTavolo(id) {
+    tavoliState[id] = { isRunning: false, startTime: 0, elapsedSecs: 0, costoOrario: 10, scattoRisposta: 0, cliente: "", tipoTariffa: "oraria" };
+  }
+
+  function calcolaQuota(id, persone, ev) {
+    const bottoni = document.getElementById(`cliente-${id}`).closest('.table-body').querySelectorAll('.split-btn');
+    bottoni.forEach(btn => btn.classList.remove('active-split'));
+    if(ev) ev.target.classList.add('active-split');
+
+    const totaleTesto = document.getElementById(`totale-${id}`).innerText.replace('€ ', '');
+    const totale = parseFloat(totaleTesto) || 0;
+    const quota = totale / persone;
+    document.getElementById(`quota-${id}`).innerText = "€ " + quota.toFixed(2);
+    divisioneContoAttuale[id] = persone;
+  }
+
+  function azioneTimer(id, azione) {
+    if (!tavoliState[id]) inizializzaStatoTavolo(id);
+    const stato = tavoliState[id];
+    const ref = db.ref('users/' + userId + '/gestionale/tavoli/' + id);
+
+    if (azione === 'start') {
+      if (!stato.isRunning) {
+        const tipo = document.getElementById(`tipo-tariffa-${id}`).value;
+        const tariffaApplicata = tipo === 'allenamento' ? (tariffeGlobali.tariffaAllenamento || 8) : (tariffeGlobali.costoOrario || 10);
+        ref.update({
+          isRunning: true,
+          startTime: Date.now() - (stato.elapsedSecs || 0) * 1000,
+          costoOrario: tariffaApplicata,
+          scattoRisposta: tariffeGlobali.scattoRisposta !== undefined ? tariffeGlobali.scattoRisposta : 0,
+          tipoTariffa: tipo
+        });
+      }
+    } 
+    else if (azione === 'stop') {
+      if (stato.isRunning) {
+        const elapsed = Math.floor((Date.now() - stato.startTime) / 1000);
+        ref.update({ isRunning: false, elapsedSecs: elapsed });
+      }
+    } 
+    else if (azione === 'reset') {
+      let elapsed = stato.elapsedSecs || 0;
+      if (stato.isRunning && stato.startTime > 0) {
+        elapsed = Math.floor((Date.now() - stato.startTime) / 1000);
+      }
+      
+      const h = elapsed / 3600;
+      const costoTot = (stato.scattoRisposta || 0) + (h * (stato.costoOrario || 0));
+
+      if (elapsed > 0 || costoTot > 0) {
+        tavoloInPagamento = id;
+        datiPagamentoTemp = { tempo: elapsed, costo: costoTot };
+
+        const nomeTavolo = tavoliConfig[id].nome || id;
+        document.getElementById('pagamento-tavolo-nome').innerText = nomeTavolo;
+        document.getElementById('pagamento-totale').innerText = "€ " + costoTot.toFixed(2);
+        document.getElementById('pagamento-tempo').innerText = formatTime(elapsed);
+
+        const numPaganti = divisioneContoAttuale[id] || 1;
+        document.getElementById('pagamento-num-persone').value = numPaganti;
+
+        aggiornaDropdownPaganti(stato.cliente);
+
+        document.getElementById('pagamento-overlay').style.display = 'flex';
+      } else {
+        if (confirm("Il tavolo è a zero. Azzerarlo senza salvare nel registro degli incassi?")) {
+          ref.update({ isRunning: false, startTime: 0, elapsedSecs: 0, cliente: "" });
+          document.getElementById(`quota-${id}`).innerText = "-";
+          divisioneContoAttuale[id] = 1;
+          const bottoni = document.getElementById(`cliente-${id}`).closest('.table-body').querySelectorAll('.split-btn');
+          bottoni.forEach(b => b.classList.remove('active-split'));
+          bottoni[0].classList.add('active-split');
+        }
+      }
+    }
+  }
+
+  function formatTime(seconds) {
+    const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+    const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  }
+
+  function aggiornaTimerVisivi() {
+    Object.keys(tavoliConfig).forEach(id => {
+      const stato = tavoliState[id];
+      if (!stato) return;
+
+      let elapsed = stato.elapsedSecs || 0;
+      if (stato.isRunning && stato.startTime > 0) {
+        elapsed = Math.floor((Date.now() - stato.startTime) / 1000);
+      }
+
+      const h = elapsed / 3600;
+      const costoTot = (stato.scattoRisposta || 0) + (h * (stato.costoOrario || 0));
+
+      const timerEl = document.getElementById(`timer-${id}`);
+      const totEl = document.getElementById(`totale-${id}`);
+      
+      if(timerEl) timerEl.innerText = formatTime(elapsed);
+      if(totEl) totEl.innerText = "€ " + costoTot.toFixed(2);
+    });
+  }
+
+  function aggiornaUI() {
+    Object.keys(tavoliConfig).forEach(id => {
+      const stato = tavoliState[id] || {};
+      
+      const cliEl = document.getElementById(`cliente-${id}`);
+      const tipoEl = document.getElementById(`tipo-tariffa-${id}`);
+      const badge = document.getElementById(`badge-${id}`);
+      const btnStart = document.getElementById(`btn-start-${id}`);
+
+      if (cliEl && document.activeElement !== cliEl) cliEl.value = stato.cliente || "";
+      if (tipoEl && document.activeElement !== tipoEl) tipoEl.value = stato.tipoTariffa || "oraria";
+
+      if (badge) {
+        if (stato.isRunning) {
+          badge.className = "status-badge status-busy";
+          badge.innerText = "OCCUPATO";
+          if(btnStart) btnStart.style.opacity = "0.5";
+        } else {
+          badge.className = "status-badge status-free";
+          badge.innerText = "LIBERO";
+          if(btnStart) btnStart.style.opacity = "1";
+        }
+      }
+    });
+    aggiornaTimerVisivi();
+  }
+
+  // --- GESTIONE CLIENTI E STATISTICHE ---
+  function apriAnagrafica() { document.getElementById('anagrafica-overlay').style.display = 'flex'; }
+  function chiudiAnagrafica() { document.getElementById('anagrafica-overlay').style.display = 'none'; }
+
+  function aggiungiCliente() {
+    const nome = document.getElementById('new-customer-name').value.trim();
+    if (nome === "") return;
+    const cid = "CLI-" + Date.now();
+    db.ref('users/' + userId + '/gestionale/clienti/' + cid).set({ nome: nome }).then(() => {
+      document.getElementById('new-customer-name').value = "";
+    });
+  }
+
+  function eliminaCliente(cid) {
+    if(confirm("Eliminare questo cliente dall'anagrafica?")) {
+      db.ref('users/' + userId + '/gestionale/clienti/' + cid).remove();
+    }
+  }
+
+  function aggiornaListaAnagrafica() {
+    const container = document.getElementById('customer-list-container');
+    container.innerHTML = "";
+    Object.keys(clientiDb).forEach(cid => {
+      container.innerHTML += `
+        <div class="customer-item">
+          <div class="customer-name">${clientiDb[cid].nome}</div>
+          <button class="btn btn-red" style="padding: 4px 8px; font-size:0.8rem;" onclick="eliminaCliente('${cid}')">ELIMINA</button>
+        </div>
+      `;
+    });
+  }
+
+  function aggiornaSelectClienti() {
+    const selectsTavoli = document.querySelectorAll('select[id^="cliente-"]');
+    selectsTavoli.forEach(sel => {
+      const valAttuale = sel.value;
+      sel.innerHTML = '<option value="">-- Nessuno/Ospite --</option>';
+      Object.keys(clientiDb).forEach(cid => { sel.innerHTML += `<option value="${cid}">${clientiDb[cid].nome}</option>`; });
+      sel.value = valAttuale;
+    });
+  }
+
+  function apriStatistiche() {
+    document.getElementById('statistiche-overlay').style.display = 'flex';
+    document.getElementById('stat-periodo').value = 'oggi';
+    document.getElementById('custom-dates').style.display = 'none';
+
+    const selBil = document.getElementById('stat-filtro-biliardo');
+    selBil.innerHTML = '<option value="tutti">Tutti i Biliardi</option>';
+    Object.keys(tavoliConfig).forEach(id => {
+      const nome = tavoliConfig[id].nome || id;
+      selBil.innerHTML += `<option value="${nome}">${nome}</option>`;
+    });
+
+    const selGioc = document.getElementById('stat-filtro-giocatore');
+    selGioc.innerHTML = '<option value="tutti">Tutti i Giocatori</option><option value="Sconosciuto/Ospite">Ospiti / Non Registrati</option>';
+    Object.keys(clientiDb).forEach(cid => {
+      selGioc.innerHTML += `<option value="${clientiDb[cid].nome}">${clientiDb[cid].nome}</option>`;
+    });
+
+    caricaEcalcolaStatistiche();
+  }
+
+  function chiudiStatistiche() { document.getElementById('statistiche-overlay').style.display = 'none'; }
+
+  function caricaEcalcolaStatistiche() {
+    db.ref('users/' + userId + '/gestionale/storico').once('value').then(snap => {
+      elaboraStatistiche(snap.val() || {});
+    });
+  }
+
+  function elaboraStatistiche(storico) {
+    const periodo = document.getElementById('stat-periodo').value;
+    const filtroBil = document.getElementById('stat-filtro-biliardo').value;
+    const filtroGioc = document.getElementById('stat-filtro-giocatore').value;
+    const raggruppa = 'dettaglio'; 
+
+    let dal, al;
+    const oggi = new Date();
+
+    if (periodo === 'personalizza') {
+      const dalVal = document.getElementById('stat-dal').value;
+      const alVal = document.getElementById('stat-al').value;
+      if(!dalVal || !alVal) return;
+      dal = new Date(dalVal); dal.setHours(0,0,0,0);
+      al = new Date(alVal); al.setHours(23,59,59,999);
+    } else {
+      al = new Date(oggi); al.setHours(23,59,59,999);
+      dal = new Date(oggi); dal.setHours(0,0,0,0);
+      
+      if (periodo === 'ieri') {
+        dal.setDate(dal.getDate() - 1);
+        al.setDate(al.getDate() - 1);
+      } else if (periodo === '7giorni') {
+        dal.setDate(dal.getDate() - 7);
+      } else if (periodo === '30giorni') {
+        dal.setDate(dal.getDate() - 30);
+      } else if (periodo === '365giorni') {
+        dal.setDate(dal.getDate() - 365);
+      }
+    }
+
+    let arrayDettagli = [];
+    let incassoTotalePeriodo = 0;
+    let tempoTotalePeriodo = 0;
+
+    Object.values(storico).forEach(record => {
+      const dataRec = new Date(record.dataArchiviazione);
+      if (dataRec >= dal && dataRec <= al) {
+        if (filtroBil !== 'tutti' && record.tavolo !== filtroBil) return;
+        if (filtroGioc !== 'tutti' && record.cliente !== filtroGioc) return;
+
+        incassoTotalePeriodo += record.incasso;
+        tempoTotalePeriodo += record.tempoSecondi;
+
+        const labelData = dataRec.toLocaleString('it-IT', {day: '2-digit', month: '2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+        arrayDettagli.push({ label: `${labelData} - ${record.tavolo} (${record.cliente})`, tempo: record.tempoSecondi, incasso: record.incasso, timestamp: record.dataArchiviazione });
+      }
+    });
+
+    const tbody = document.getElementById('stat-tbody');
+    tbody.innerHTML = "";
+    
+    arrayDettagli.sort((a,b) => b.timestamp - a.timestamp);
+    if(arrayDettagli.length === 0) tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px; color:#aaa;">Nessun dato.</td></tr>`;
+    else arrayDettagli.forEach(item => tbody.innerHTML += `<tr><td class="stat-td">${item.label}</td><td class="stat-td" style="text-align:center; font-family:monospace; font-size:1.1rem;">${formatTime(item.tempo)}</td><td class="stat-td" style="text-align:right; color: var(--color-p2); font-weight:900; font-size:1.1rem;">€ ${item.incasso.toFixed(2)}</td></tr>`);
+
+    document.getElementById('stat-tot-incasso').innerText = "€ " + incassoTotalePeriodo.toFixed(2);
+    document.getElementById('stat-tot-tempo').innerText = formatTime(tempoTotalePeriodo);
+  }
+
+  function salvaComePDF() {
+    const element = document.getElementById('area-stampa-pdf');
+    const opt = {
+      margin:       0.5,
+      filename:     'statistiche_biliardi.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(element).save();
+  }
+
+  // --- FUNZIONI MODALE PAGAMENTO INTELLIGENTE ---
+  function chiudiPagamento() {
+      document.getElementById('pagamento-overlay').style.display = 'none';
+      tavoloInPagamento = null;
+  }
+
+  function aggiornaDropdownPaganti(clienteDefault = null) {
+      const num = parseInt(document.getElementById('pagamento-num-persone').value) || 1;
+      const container = document.getElementById('paganti-container');
+      container.innerHTML = "";
+
+      let optionsHTML = '<option value="">-- Nessuno/Ospite --</option>';
+      Object.keys(clientiDb).forEach(cid => {
+          optionsHTML += `<option value="${clientiDb[cid].nome}">${clientiDb[cid].nome}</option>`;
+      });
+
+      for (let i = 1; i <= num; i++) {
+          const quota = datiPagamentoTemp.costo / num;
+          container.innerHTML += `
+              <div class="input-group" style="padding: 12px; border-bottom: 1px solid #222; border-radius:0;">
+                  <span class="input-label" style="color:var(--color-p2); font-size:1.1rem;">Pagante ${i} <small style="color:white; font-size:0.9rem;">(€ ${quota.toFixed(2)})</small>:</span>
+                  <select id="pagante-select-${i}" class="pagamento-select" style="background:#000; width: 60%; font-size:1.1rem;">
+                      ${optionsHTML}
+                  </select>
+              </div>
+          `;
+      }
+
+      if (clienteDefault) {
+          const primoSelect = document.getElementById('pagante-select-1');
+          // clienteDefault è l'id, nell'anagrafica le opzioni hanno il value come NOME. 
+          // Correggiamo selezionando il nome del cliente, non l'id.
+          if (primoSelect && clientiDb[clienteDefault]) {
+              primoSelect.value = clientiDb[clienteDefault].nome;
+          }
+      }
+  }
+
+  function confermaPagamento() {
+      if (!tavoloInPagamento) return;
+      
+      const id = tavoloInPagamento;
+      const ref = db.ref('users/' + userId + '/gestionale/tavoli/' + id);
+      const nomeTavolo = tavoliConfig[id].nome || id;
+
+      const num = parseInt(document.getElementById('pagamento-num-persone').value) || 1;
+      const costoPerPersona = datiPagamentoTemp.costo / num;
+      const tempoPerPersona = datiPagamentoTemp.tempo / num;
+
+      for (let i = 1; i <= num; i++) {
+          const sel = document.getElementById(`pagante-select-${i}`);
+          const nomeCliente = (sel && sel.value !== "") ? sel.value : "Sconosciuto/Ospite";
+
+          db.ref('users/' + userId + '/gestionale/storico').push({
+              dataArchiviazione: Date.now(),
+              tavolo: nomeTavolo,
+              cliente: nomeCliente,
+              tempoSecondi: tempoPerPersona,
+              incasso: costoPerPersona
+          });
+      }
+
+      ref.update({ isRunning: false, startTime: 0, elapsedSecs: 0, cliente: "" });
+      const quotaEl = document.getElementById(`quota-${id}`);
+      if(quotaEl) quotaEl.innerText = "-";
+      divisioneContoAttuale[id] = 1;
+
+      const bottoni = document.getElementById(`cliente-${id}`).closest('.table-body').querySelectorAll('.split-btn');
+      bottoni.forEach(b => b.classList.remove('active-split'));
+      if (bottoni[0]) bottoni[0].classList.add('active-split');
+
+      chiudiPagamento();
+  }
+
+  // Loop continuo per la data in alto
+  setInterval(() => {
+    const d = new Date();
+    const l = d.toLocaleString('it-IT', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).toUpperCase();
+    const el = document.getElementById('top-datetime');
+    if(el) el.innerText = l;
+  }, 1000);
+
+</script>
+</body>
+</html>
